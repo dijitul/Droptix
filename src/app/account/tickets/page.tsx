@@ -49,7 +49,7 @@ export default async function MyTicketsPage() {
 
 function EmptyState() {
   return (
-    <div className="rounded-xl border border-dashed border-border p-10 text-center">
+    <div className="border-2 border-dashed border-outline-variant p-10 text-center">
       <TicketIcon className="mx-auto mb-3 h-8 w-8 text-muted-foreground" aria-hidden="true" />
       <p className="text-muted-foreground">You haven&rsquo;t booked anything yet.</p>
       <Button asChild className="mt-4">
@@ -83,7 +83,7 @@ function Section({ label, items, muted }: { label: string; items: TicketRow[]; m
         {items.map((t) => (
           <li
             key={t.id}
-            className={`flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 ${muted ? 'opacity-70' : ''}`}
+            className={`flex items-center justify-between gap-3 border-2 border-outline-variant bg-surface-container p-4 ${muted ? 'opacity-70' : ''}`}
           >
             <div className="min-w-0 flex-1">
               <div className="truncate font-medium">{t.event.title}</div>

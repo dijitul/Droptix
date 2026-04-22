@@ -51,7 +51,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       </header>
 
       <div
-        className={`ticket-reveal flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-ticket ${isVoided || isScanned ? 'opacity-60' : ''}`}
+        className={`ticket-reveal flex flex-col overflow-hidden border-2 border-primary bg-surface-container shadow-glow ${isVoided || isScanned ? 'opacity-60' : ''}`}
       >
         <div className="flex flex-col items-center gap-3 bg-background p-6">
           {isVoided ? (
@@ -71,7 +71,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
           ) : (
             <>
               <div
-                className="overflow-hidden rounded-xl border border-border"
+                className="overflow-hidden border-2 border-primary bg-white p-1"
                 dangerouslySetInnerHTML={{ __html: qrSvg }}
                 role="img"
                 aria-label={`QR code for ticket ${ticket.doorCode}`}

@@ -3,112 +3,115 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────
-   Droptix design tokens
-   Violet primary owns a lane competitors have left open.
-   All colours in HSL so Tailwind can compose + dark mode flips
-   with a single class swap.
+   Droptix — Overdrive Industrial design system
+   ─────────────────────────────────────────────────────────────
+   High-contrast brutalist aesthetic. True-black environment with
+   Electric Lime primary, Hazard Orange secondary, Vibrant Cyan
+   tertiary. Sharp corners (max 4px), heavy borders, tonal
+   layering instead of shadows. Concrete-warehouse energy.
+
+   Colours stored as space-separated RGB so Tailwind's
+   `<alpha-value>` modifier works:  bg-primary/50  etc.
    ───────────────────────────────────────────────────────────── */
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 240 17% 6%;          /* #0B0B12 — warm near-black */
-
-    --card: 0 0% 100%;
-    --card-foreground: 240 17% 6%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 17% 6%;
-
-    --muted: 240 8% 97%;
-    --muted-foreground: 240 6% 38%;    /* #5B5B66, 4.7:1 on white */
-
-    --primary: 262 83% 51%;            /* #6D28D9 electric violet */
-    --primary-foreground: 0 0% 100%;
-    --primary-soft: 260 92% 94%;       /* #EDE9FE */
-
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 17% 6%;
-
-    --accent: 262 83% 51%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142 71% 34%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 32 95% 36%;
-    --warning-foreground: 0 0% 100%;
-
-    --border: 240 6% 91%;
-    --input: 240 6% 91%;
-    --ring: 262 83% 51%;
-
-    --radius: 0.75rem;
-  }
-
+  :root,
   .dark {
-    --background: 240 17% 6%;
-    --foreground: 240 9% 95%;
+    /* Surfaces — charcoal/olive depths */
+    --surface: 17 21 8;                     /* #111508 */
+    --surface-dim: 12 15 4;                 /* #0c0f04 */
+    --surface-bright: 55 59 44;             /* #373b2c */
+    --surface-container-low: 26 29 16;      /* #1a1d10 */
+    --surface-container: 30 33 19;          /* #1e2113 */
+    --surface-container-high: 40 43 29;     /* #282b1d */
+    --surface-container-highest: 51 54 39;  /* #333627 */
 
-    --card: 240 14% 10%;
-    --card-foreground: 240 9% 95%;
+    /* Ink / text */
+    --on-surface: 226 228 207;              /* #e2e4cf */
+    --on-surface-variant: 196 201 172;      /* #c4c9ac */
+    --outline: 142 147 121;                 /* #8e9379 */
+    --outline-variant: 68 73 51;            /* #444933 */
 
-    --popover: 240 14% 10%;
-    --popover-foreground: 240 9% 95%;
+    /* Electric Lime — primary */
+    --primary: 171 214 0;                   /* #abd600 */
+    --primary-hover: 195 244 0;             /* #c3f400 */
+    --on-primary: 40 53 0;                  /* #283500 */
+    --primary-container: 195 244 0;         /* #c3f400 */
+    --on-primary-container: 85 109 0;       /* #556d00 */
+    --primary-soft: 60 77 0;                /* #3c4d00 — darkened panel accent */
 
-    --muted: 240 13% 14%;
-    --muted-foreground: 240 5% 65%;
+    /* Hazard Orange — secondary */
+    --secondary: 255 94 7;                  /* #ff5e07 */
+    --secondary-hover: 255 181 154;         /* #ffb59a */
+    --on-secondary: 90 27 0;                /* #5a1b00 */
+    --secondary-soft: 83 25 0;              /* #531900 */
 
-    --primary: 262 90% 66%;            /* lifted for dark-mode contrast */
-    --primary-foreground: 240 17% 6%;
-    --primary-soft: 262 30% 22%;
+    /* Vibrant Cyan — tertiary (tech labels, links, cursor) */
+    --tertiary: 125 244 255;                /* #7df4ff */
+    --tertiary-hover: 0 219 233;            /* #00dbe9 */
+    --on-tertiary: 0 54 58;                 /* #00363a */
+    --tertiary-soft: 0 79 84;               /* #004f54 */
 
-    --secondary: 240 13% 14%;
-    --secondary-foreground: 240 9% 95%;
+    /* States */
+    --error: 255 180 171;                   /* #ffb4ab */
+    --on-error: 105 0 5;                    /* #690005 */
+    --warning: 255 94 7;                    /* hazard = warning */
+    --success: 171 214 0;                   /* lime = confirmed */
 
-    --accent: 262 90% 66%;
-    --accent-foreground: 240 17% 6%;
+    /* Aliases the rest of the codebase uses */
+    --background: var(--surface);
+    --foreground: var(--on-surface);
+    --card: var(--surface-container);
+    --card-foreground: var(--on-surface);
+    --popover: var(--surface-container-high);
+    --popover-foreground: var(--on-surface);
+    --muted: var(--surface-container-low);
+    --muted-foreground: var(--on-surface-variant);
+    --primary-foreground: var(--on-primary);
+    --secondary-foreground: 255 255 255;
+    --accent: var(--tertiary);
+    --accent-foreground: var(--on-tertiary);
+    --destructive: var(--error);
+    --destructive-foreground: var(--on-error);
+    --success-foreground: var(--on-primary);
+    --warning-foreground: var(--on-secondary);
+    --border: var(--outline-variant);
+    --input: var(--surface-container-high);
+    --ring: var(--primary);
 
-    --destructive: 0 63% 58%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142 61% 50%;
-    --success-foreground: 240 17% 6%;
-
-    --warning: 32 85% 55%;
-    --warning-foreground: 240 17% 6%;
-
-    --border: 240 13% 20%;
-    --input: 240 13% 20%;
-    --ring: 262 90% 66%;
+    /* Sharp by default, industrial */
+    --radius: 2px;
   }
 
   * {
-    @apply border-border;
+    border-color: rgb(var(--border));
   }
+
   html {
-    color-scheme: light dark;
+    color-scheme: dark;
+    background-color: rgb(var(--background));
   }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    background-image:
+      /* concrete noise — subtle grain for texture */
+      radial-gradient(rgba(171, 214, 0, 0.015) 1px, transparent 1px);
+    background-size: 3px 3px;
+    font-feature-settings: 'ss01', 'cv11';
   }
 
-  /* WCAG 2.2 — 2.4.13 Focus Appearance */
+  /* WCAG 2.2 2.4.13 Focus Appearance — thick lime ring, no halo fade */
   :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
   }
 
-  /* WCAG 2.2 — 2.5.8 Target Size (we go bigger than the 24px floor) */
+  /* 2.5.8 Target Size — we go bigger than the 24 CSS px floor */
   button,
   [role='button'],
   a.btn {
-    @apply min-h-[44px] min-w-[44px];
+    @apply min-h-[44px];
   }
 
-  /* prefers-reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -120,11 +123,120 @@
     }
   }
 
-  /* UK number formatting for <input type="number"> still shows native widget;
-     we use text inputs with inputMode="decimal" for money everywhere */
+  /* Selection — lime on ink, unmistakably brand */
+  ::selection {
+    background-color: rgb(var(--primary));
+    color: rgb(var(--on-primary));
+  }
+
+  /* Scrollbar — dark industrial */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--surface-dim));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--surface-container-highest));
+    border: 2px solid rgb(var(--surface-dim));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--primary));
+  }
 }
 
-/* Ticket "drop" motion — the single signature motion */
-.ticket-reveal {
-  animation: ticket-drop 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+/* ═══════════════════════════════════════════════════════════
+   Typography — Space Grotesk for impact, Inter for info
+   ═══════════════════════════════════════════════════════════ */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: 'ss01';
+  }
+
+  .text-display-xl {
+    @apply font-display font-bold;
+    font-size: clamp(3rem, 7vw, 4.5rem); /* ~48→72 */
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .text-display-lg {
+    @apply font-display font-bold;
+    font-size: clamp(2.25rem, 4.5vw, 3rem); /* 36→48 */
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .text-display-md {
+    @apply font-display font-semibold;
+    font-size: 2rem;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+  .text-display-sm {
+    @apply font-display font-semibold;
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .label-tech {
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Brutalist decorations
+   ═══════════════════════════════════════════════════════════ */
+@layer components {
+  /* Hazard stripe divider — diagonal yellow/black warehouse-style */
+  .hazard-stripe {
+    --stripe: rgb(var(--primary));
+    --gap: rgb(var(--surface));
+    background: repeating-linear-gradient(
+      45deg,
+      var(--stripe) 0 10px,
+      var(--gap) 10px 20px
+    );
+    height: 4px;
+  }
+
+  /* Dashed technical divider */
+  .tech-divider {
+    border: 0;
+    border-top: 1px dashed rgb(var(--outline-variant));
+    height: 0;
+  }
+
+  /* Corner "screw" — small cyan dot in container corners */
+  .corner-screws::before,
+  .corner-screws::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgb(var(--tertiary) / 0.6);
+  }
+  .corner-screws::before { top: 8px; left: 8px; }
+  .corner-screws::after  { top: 8px; right: 8px; }
+
+  /* Reveal animation — used on purchase confirmation */
+  .ticket-reveal {
+    animation: ticket-drop 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+@keyframes ticket-drop {
+  0% { transform: translateY(-12px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Blinking terminal cursor for input focus */
+@keyframes terminal-blink {
+  50% { opacity: 0; }
 }

@@ -8,11 +8,11 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Droptix',
     short_name: 'Droptix',
-    description: 'UK tickets for gigs, club nights, comedy & more',
+    description: 'UK music tickets — gigs, club nights, festivals',
     start_url: '/',
     display: 'standalone',
-    background_color: '#FFFFFF',
-    theme_color: '#6D28D9',
+    background_color: '#111508',
+    theme_color: '#abd600',
     lang: 'en-GB',
     orientation: 'any',
     icons: [

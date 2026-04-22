@@ -4,26 +4,35 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 /**
- * Button — shadcn-derived. All variants meet WCAG 2.2 contrast + 44px
- * target-size minimums per our base styles. Use `asChild` to render as
- * a `<Link>` while keeping button a11y semantics.
+ * Buttons — industrial, sharp, heavy-bordered. Default variant is a
+ * solid lime fill with dark text (maximum impact). `outline` is the
+ * terminal-style hollow button. Hover states offset the border 2px to
+ * evoke a glitch / hardware-feedback moment.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'relative inline-flex items-center justify-center gap-2 whitespace-nowrap font-display text-sm font-bold uppercase tracking-wider transition-all ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline: 'border border-input bg-background hover:bg-muted hover:text-foreground',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-muted hover:text-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        default:
+          'border-2 border-primary bg-primary text-primary-foreground hover:bg-primary-hover hover:border-primary-hover hover:shadow-glow',
+        outline:
+          'border-2 border-primary bg-transparent text-primary hover:bg-primary/10',
+        secondary:
+          'border-2 border-secondary bg-secondary text-secondary-foreground hover:bg-secondary-hover hover:border-secondary-hover',
+        tertiary:
+          'border-2 border-tertiary bg-transparent text-tertiary hover:bg-tertiary/10',
+        ghost:
+          'border-2 border-transparent bg-transparent text-foreground hover:bg-surface-container-high hover:border-outline-variant',
+        destructive:
+          'border-2 border-destructive bg-destructive/20 text-destructive hover:bg-destructive/30',
+        link:
+          'border-0 bg-transparent text-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-11 px-5 py-2',
-        sm: 'h-9 rounded-md px-3 text-xs',
-        lg: 'h-12 rounded-lg px-6 text-base',
+        default: 'h-11 px-5',
+        sm: 'h-9 px-3 text-xs',
+        lg: 'h-12 px-6 text-base',
         icon: 'h-11 w-11',
       },
     },

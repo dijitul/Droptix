@@ -76,7 +76,7 @@ export default async function EventPage({ params }: { params: Promise<Params> })
 
       <main id="main" className="mx-auto max-w-5xl px-4 pb-32 pt-6 sm:px-6 sm:pb-16 sm:pt-10">
         {/* Hero */}
-        <div className="relative mb-8 aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-primary-soft to-primary/20">
+        <div className="relative mb-8 aspect-[16/9] w-full overflow-hidden border-2 border-outline-variant bg-gradient-to-br from-primary-soft to-primary/10">
           {event.heroImage && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -149,7 +149,7 @@ export default async function EventPage({ params }: { params: Promise<Params> })
           {/* Sticky buy panel (desktop) / bottom sheet (mobile) */}
           <aside
             aria-label="Buy tickets"
-            className="rounded-2xl border border-border bg-card p-5 md:sticky md:top-6 md:self-start md:shadow-sm"
+            className="border-2 border-outline-variant bg-surface-container p-5 md:sticky md:top-24 md:self-start"
           >
             <CheckoutForm
               ticketTypes={event.ticketTypes.map((tt) => ({

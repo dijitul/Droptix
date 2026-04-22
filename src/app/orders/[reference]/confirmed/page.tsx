@@ -52,7 +52,7 @@ export default async function ConfirmedPage({ params }: { params: Promise<{ refe
         </p>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="border-2 border-outline-variant bg-surface-container p-5">
         <h2 className="mb-3 text-lg font-semibold">{order.event.title}</h2>
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between">
@@ -81,14 +81,14 @@ export default async function ConfirmedPage({ params }: { params: Promise<{ refe
       </div>
 
       {isPaid && order.tickets.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="border-2 border-outline-variant bg-surface-container p-5">
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
             <TicketIcon className="h-5 w-5 text-primary" aria-hidden="true" />
             Your tickets
           </h2>
           <ul className="flex flex-col gap-2">
             {order.tickets.map((t) => (
-              <li key={t.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+              <li key={t.id} className="flex items-center justify-between border-2 border-outline-variant p-3">
                 <div>
                   <div className="font-medium">{t.ticketType.name}</div>
                   <div className="font-mono text-xs text-muted-foreground">{t.doorCode}</div>

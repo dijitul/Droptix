@@ -3,20 +3,19 @@
 import { Toaster as SonnerToaster } from 'sonner';
 
 /**
- * Sonner wrapper that picks up our token colours.
- * Mount once in the root layout.
+ * Industrial toast surface — sharp corners, heavy border, no shadow.
  */
 export function Toaster() {
   return (
     <SonnerToaster
-      theme="system"
+      theme="dark"
       position="top-right"
       richColors
       closeButton
       duration={5000}
       toastOptions={{
         classNames: {
-          toast: 'rounded-lg border border-border bg-card text-card-foreground shadow-md',
+          toast: 'border-2 border-outline-variant bg-surface-container text-on-surface',
         },
       }}
     />

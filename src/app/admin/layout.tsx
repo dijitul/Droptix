@@ -9,14 +9,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const user = await requireAdmin();
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/30 md:flex-row">
+    <div className="flex min-h-screen flex-col bg-surface-dim md:flex-row">
       <aside
         aria-label="Admin navigation"
-        className="flex w-full shrink-0 flex-col gap-1 border-b border-border bg-card p-4 md:h-screen md:w-64 md:border-b-0 md:border-r"
+        className="flex w-full shrink-0 flex-col gap-1 border-b-2 border-outline-variant bg-surface-container p-4 md:h-screen md:w-64 md:border-b-0 md:border-r-2"
       >
         <Link
           href="/admin"
-          className="mb-2 flex items-center gap-2 rounded-lg px-2 py-1 font-semibold"
+          className="mb-2 flex items-center gap-2 px-2 py-1 font-display font-bold uppercase tracking-tight"
         >
           <Ticket className="h-5 w-5 text-primary" aria-hidden="true" />
           Droptix Admin
@@ -58,7 +58,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      className="flex items-center gap-2 px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-container-high hover:text-primary"
     >
       <Icon className="h-4 w-4" aria-hidden={true} />
       {children}

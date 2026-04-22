@@ -101,10 +101,10 @@ export function CheckoutForm({
               key={tt.id}
               htmlFor={`tt-${tt.id}`}
               className={[
-                'flex cursor-pointer items-start justify-between gap-3 rounded-xl border p-4 transition-colors',
+                'flex cursor-pointer items-start justify-between gap-3 border-2 p-4 transition-colors',
                 selectedId === tt.id
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:bg-muted/50',
+                  ? 'border-primary bg-primary/10'
+                  : 'border-outline-variant hover:bg-surface-container-high',
                 soldOut && 'cursor-not-allowed opacity-60',
               ].filter(Boolean).join(' ')}
             >
@@ -184,7 +184,7 @@ export function CheckoutForm({
       </div>
 
       {feeBreakdown && (
-        <div className="rounded-xl border border-border bg-muted/30 p-3 text-sm">
+        <div className="border-2 border-outline-variant bg-surface-container-low p-3 text-sm">
           <dl className="flex flex-col gap-1">
             <div className="flex justify-between">
               <dt className="text-muted-foreground">{quantity} × ticket</dt>
