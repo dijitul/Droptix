@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
+import type { Prisma } from '@prisma/client';
 import { db } from '@/server/db';
 import { getStripe, getStripeWebhookSecret } from '@/server/stripe';
 import { issueTicketsForOrder, releaseOrderReservation } from '@/server/ticket-issuance';
@@ -42,7 +43,7 @@ export async function POST(req: Request): Promise<Response> {
         provider: 'stripe',
         externalId: event.id,
         eventType: event.type,
-        payload: event as unknown as Record<string, unknown>,
+        payload: event as unknown as Prisma.InputJsonValue,
       },
     });
   } catch (err) {
