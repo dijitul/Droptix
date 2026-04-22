@@ -3,7 +3,6 @@ import { ArrowRight, QrCode } from 'lucide-react';
 import { requireOrganiser } from '@/server/guards';
 import { db } from '@/server/db';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { formatEventDate } from '@/lib/format';
 
 export const metadata = { title: 'Door scanner' };

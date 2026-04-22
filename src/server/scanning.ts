@@ -56,7 +56,7 @@ export async function verifyScan(input: ScanInput): Promise<ScanResult> {
     eventSigningKey: event.ticketSigningKey,
   });
 
-  let ticketId = verification.ticketId;
+  const ticketId = verification.ticketId;
 
   // The HMAC includes issuedAt (unix seconds). Because we don't have it on
   // the client side, verify against the DB-stored issuedAt after we load.

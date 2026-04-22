@@ -135,8 +135,8 @@ export default async function NewEventPage() {
           <div className="border-2 border-outline-variant bg-surface-container p-5">
             <div className="label-tech mb-3 text-tertiary">Publish as</div>
             <div className="flex flex-col gap-3">
-              <label className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input type="radio" name="status" value="DRAFT" defaultChecked className="mt-1 accent-primary" />
+              <label htmlFor="status-draft" className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input id="status-draft" type="radio" name="status" value="DRAFT" defaultChecked className="mt-1 accent-primary" />
                 <div>
                   <div className="font-semibold">Draft</div>
                   <div className="text-xs text-muted-foreground">
@@ -144,8 +144,8 @@ export default async function NewEventPage() {
                   </div>
                 </div>
               </label>
-              <label className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input type="radio" name="status" value="SCHEDULED" className="mt-1 accent-primary" />
+              <label htmlFor="status-scheduled" className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input id="status-scheduled" type="radio" name="status" value="SCHEDULED" className="mt-1 accent-primary" />
                 <div>
                   <div className="font-semibold">Scheduled</div>
                   <div className="text-xs text-muted-foreground">
@@ -153,8 +153,8 @@ export default async function NewEventPage() {
                   </div>
                 </div>
               </label>
-              <label className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input type="radio" name="status" value="ON_SALE" className="mt-1 accent-primary" />
+              <label htmlFor="status-onsale" className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input id="status-onsale" type="radio" name="status" value="ON_SALE" className="mt-1 accent-primary" />
                 <div>
                   <div className="font-semibold">On sale</div>
                   <div className="text-xs text-muted-foreground">
