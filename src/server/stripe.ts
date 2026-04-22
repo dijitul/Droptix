@@ -24,7 +24,7 @@ export async function getStripe(): Promise<Stripe> {
   }
 
   const client = new Stripe(secretKey, {
-    apiVersion: '2025-03-31.basil',
+    apiVersion: '2025-02-24.acacia',
     typescript: true,
     appInfo: {
       name: 'Droptix',
