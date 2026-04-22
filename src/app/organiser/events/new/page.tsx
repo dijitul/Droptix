@@ -134,35 +134,12 @@ export default async function NewEventPage() {
         <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
           <div className="border-2 border-outline-variant bg-surface-container p-5">
             <div className="label-tech mb-3 text-tertiary">Publish as</div>
-            <div className="flex flex-col gap-3">
-              <label htmlFor="status-draft" className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input id="status-draft" type="radio" name="status" value="DRAFT" defaultChecked className="mt-1 accent-primary" />
-                <div>
-                  <div className="font-semibold">Draft</div>
-                  <div className="text-xs text-muted-foreground">
-                    Not visible anywhere. Carry on prepping.
-                  </div>
-                </div>
-              </label>
-              <label htmlFor="status-scheduled" className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input id="status-scheduled" type="radio" name="status" value="SCHEDULED" className="mt-1 accent-primary" />
-                <div>
-                  <div className="font-semibold">Scheduled</div>
-                  <div className="text-xs text-muted-foreground">
-                    Listed publicly, sales not open yet.
-                  </div>
-                </div>
-              </label>
-              <label htmlFor="status-onsale" className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input id="status-onsale" type="radio" name="status" value="ON_SALE" className="mt-1 accent-primary" />
-                <div>
-                  <div className="font-semibold">On sale</div>
-                  <div className="text-xs text-muted-foreground">
-                    Live and selling — needs at least one ticket type.
-                  </div>
-                </div>
-              </label>
-            </div>
+            <fieldset className="flex flex-col gap-3">
+              <legend className="sr-only">Publish as</legend>
+              <StatusRadio id="status-draft" value="DRAFT" defaultChecked label="Draft" hint="Not visible anywhere. Carry on prepping." />
+              <StatusRadio id="status-scheduled" value="SCHEDULED" label="Scheduled" hint="Listed publicly, sales not open yet." />
+              <StatusRadio id="status-onsale" value="ON_SALE" label="On sale" hint="Live and selling — needs at least one ticket type." />
+            </fieldset>
           </div>
 
           <Button type="submit" size="lg" className="w-full">
@@ -184,5 +161,39 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="mb-4 font-display text-lg font-bold uppercase tracking-tight">{title}</h2>
       <div className="flex flex-col gap-4">{children}</div>
     </section>
+  );
+}
+
+function StatusRadio({
+  id,
+  value,
+  label,
+  hint,
+  defaultChecked,
+}: {
+  id: string;
+  value: string;
+  label: string;
+  hint: string;
+  defaultChecked?: boolean;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+    >
+      <input
+        id={id}
+        type="radio"
+        name="status"
+        value={value}
+        defaultChecked={defaultChecked}
+        className="mt-1 accent-primary"
+      />
+      <span className="flex-1">
+        <span className="block font-semibold">{label}</span>
+        <span className="block text-xs text-muted-foreground">{hint}</span>
+      </span>
+    </label>
   );
 }
