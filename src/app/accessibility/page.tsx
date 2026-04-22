@@ -28,7 +28,7 @@ export default function AccessibilityPage() {
           <li>Colour-independent status (every coloured chip has an icon or text label)</li>
           <li>Respects <code>prefers-reduced-motion</code></li>
           <li>Screen-reader-friendly currency and date formatting</li>
-          <li>Scanner announces scan results via <code>aria-live="assertive"</code></li>
+          <li>Scanner announces scan results via <code>aria-live=&quot;assertive&quot;</code></li>
           <li>Magic-link sign-in (no CAPTCHA cognitive puzzles)</li>
         </ul>
 
