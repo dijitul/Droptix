@@ -1,7 +1,7 @@
 // PM2 process manifest for CyberPanel deployment.
-// CyberPanel's Node.js app manager can also run the app directly via
-// `node .next/standalone/server.js`, but PM2 gives us clustering,
-// log rotation, and zero-downtime reloads.
+// Two apps: the Next.js web server + a BullMQ worker for emails, webhook
+// retries, and scan-reconcile jobs. Web runs in cluster mode (one process
+// per CPU), worker runs as a single process (BullMQ handles concurrency).
 module.exports = {
   apps: [
     {
@@ -15,10 +15,24 @@ module.exports = {
         PORT: 3000,
         HOSTNAME: '0.0.0.0',
       },
-      error_file: 'logs/pm2-error.log',
-      out_file: 'logs/pm2-out.log',
+      error_file: 'logs/web-error.log',
+      out_file: 'logs/web-out.log',
       merge_logs: true,
       time: true,
+    },
+    {
+      name: 'droptix-worker',
+      script: 'node_modules/tsx/dist/cli.mjs',
+      args: 'src/server/workers/index.ts',
+      instances: 1,
+      exec_mode: 'fork',
+      max_memory_restart: '384M',
+      env: { NODE_ENV: 'production' },
+      error_file: 'logs/worker-error.log',
+      out_file: 'logs/worker-out.log',
+      merge_logs: true,
+      time: true,
+      restart_delay: 5000,
     },
   ],
 };

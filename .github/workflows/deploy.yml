@@ -40,7 +40,7 @@ jobs:
             # Reload the Node process managed by PM2 (installed per CyberPanel
             # Node.js app convention). Fall back to passenger restart if PM2 isn't present.
             if command -v pm2 >/dev/null 2>&1; then
-              pm2 reload droptix --update-env
+              pm2 reload ecosystem.config.cjs --update-env
             else
               touch tmp/restart.txt
             fi
