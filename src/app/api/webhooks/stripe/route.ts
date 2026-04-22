@@ -81,6 +81,37 @@ export async function POST(req: Request): Promise<Response> {
         break;
       }
 
+      case 'account.updated': {
+        // Connect account status change — sync onto the organiser row
+        const account = event.data.object as Stripe.Account;
+        const organiserId =
+          (typeof account.metadata?.droptix_organiser_id === 'string' && account.metadata.droptix_organiser_id) ||
+          undefined;
+        if (organiserId) {
+          await db.organiser.updateMany({
+            where: { id: organiserId, stripeAccountId: account.id },
+            data: {
+              stripeChargesEnabled: Boolean(account.charges_enabled),
+              stripePayoutsEnabled: Boolean(account.payouts_enabled),
+              stripeOnboardedAt: account.details_submitted ? new Date() : null,
+              status:
+                account.charges_enabled && account.payouts_enabled ? 'ACTIVE' : undefined,
+            },
+          });
+        } else {
+          // Fall back: match by stripeAccountId only
+          await db.organiser.updateMany({
+            where: { stripeAccountId: account.id },
+            data: {
+              stripeChargesEnabled: Boolean(account.charges_enabled),
+              stripePayoutsEnabled: Boolean(account.payouts_enabled),
+              stripeOnboardedAt: account.details_submitted ? new Date() : null,
+            },
+          });
+        }
+        break;
+      }
+
       case 'charge.refunded':
       case 'charge.refund.updated': {
         // Phase 1a: just log it on the order. Full refund pipeline in Phase 3.
