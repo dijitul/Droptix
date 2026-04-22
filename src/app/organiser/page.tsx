@@ -5,7 +5,6 @@ import { db } from '@/server/db';
 import { Money } from '@/lib/money';
 import { formatEventDate } from '@/lib/format';
 import type { Currency } from '@prisma/client';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 export const dynamic = 'force-dynamic';
