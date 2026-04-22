@@ -74,8 +74,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   events: {
     async signIn({ user }) {
-      // Opportunistic: first sign-in bumps emailVerified + created_at is already set
-      if (user?.id && !user.emailVerified) {
+      // Opportunistic: first sign-in marks the email verified. Auth.js's
+      // User type doesn't expose emailVerified in the callback arg, so we
+      // check via a lightweight DB read before writing.
+      if (!user?.id) return;
+      const existing = await db.user.findUnique({
+        where: { id: user.id },
+        select: { emailVerified: true },
+      });
+      if (existing && !existing.emailVerified) {
         await db.user.update({
           where: { id: user.id },
           data: { emailVerified: new Date() },
