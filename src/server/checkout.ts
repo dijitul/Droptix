@@ -48,6 +48,7 @@ export async function createCheckoutSession(formData: FormData): Promise<void> {
       event: {
         include: {
           organiser: true,
+          venue: true,
         },
       },
     },
