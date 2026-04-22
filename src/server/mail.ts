@@ -21,7 +21,8 @@ export async function sendMail(params: {
   textBody: string;
   messageStream?: string; // 'outbound' | 'broadcast' — Postmark split for deliverability
   headers?: Record<string, string>;
-  attachments?: Array<{ Name: string; Content: string; ContentType: string; ContentID?: string | null }>;
+  // Attachments intentionally omitted in v1 — wallet passes arrive in Phase 1b
+  // and will re-introduce this with the exact Postmark Attachment type.
 }): Promise<void> {
   const fromEmail = (await getIntegration('POSTMARK', 'from_email')) ?? 'tickets@droptix.co.uk';
   const fromName = (await getIntegration('POSTMARK', 'from_name')) ?? 'Droptix';
@@ -39,7 +40,6 @@ export async function sendMail(params: {
     Headers: params.headers
       ? Object.entries(params.headers).map(([Name, Value]) => ({ Name, Value }))
       : undefined,
-    Attachments: params.attachments,
     TrackOpens: false, // deliberate — don't burn privacy trust
     TrackLinks: 'None',
   });
