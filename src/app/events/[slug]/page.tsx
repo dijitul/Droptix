@@ -8,6 +8,7 @@ import { Money } from '@/lib/money';
 import { formatLongDate, formatEventTime, toIsoLondon } from '@/lib/format';
 import { eventJsonLd, jsonLdScript, breadcrumbsJsonLd } from '@/lib/seo';
 import { env } from '@/lib/env';
+import type { Currency } from '@prisma/client';
 import { CheckoutForm } from './CheckoutForm';
 
 export const dynamic = 'force-dynamic';
