@@ -51,13 +51,16 @@ sudo apt install -y redis-server
 sudo systemctl enable --now redis-server
 ```
 
-## 2. Create the CyberPanel website
+## 2. Replace the existing vhost on apex droptix.co.uk
 
-1. Log into CyberPanel → **Websites → Create Website**
-2. Domain: `staging.droptix.co.uk` (keep the old Laravel script on the apex domain until cutover)
-3. PHP: None required; Droptix is pure Node
-4. SSL: Issue Let's Encrypt
-5. Note the document root (typically `/home/staging.droptix.co.uk/public_html`)
+The legacy Laravel script was never launched / is broken. We take over
+the apex domain directly — no staging subdomain.
+
+1. CyberPanel → **Websites → list → droptix.co.uk**
+2. **Manage → Change PHP** → `Do not set handler` (we're not using PHP any more)
+3. **Manage → Rewrite Rules** — replace Laravel's rules with the Node proxy rules in step 3 below
+4. Re-issue SSL under **SSL → Issue SSL** (Let's Encrypt) once traffic is cut over, then enforce HTTPS
+5. Note the document root (typically `/home/droptix.co.uk/public_html`) — we won't serve from it, but rewrite rules live in `.htaccess` inside it
 
 ## 3. Proxy rules in OpenLiteSpeed
 
@@ -78,7 +81,7 @@ Or, cleaner: use OpenLiteSpeed's **External App** (type = Web Server) pointing a
 
 ```bash
 sudo su - cyberpanel-user      # whichever user owns the vhost
-cd /home/staging.droptix.co.uk
+cd /home/droptix.co.uk
 git clone git@github.com:dijitul/Droptix.git droptix
 cd droptix
 
@@ -104,7 +107,7 @@ Verify: `curl http://127.0.0.1:3000/api/health` should return `{"status":"ok",..
 
 ## 6. Cloudflare proxying
 
-- Add `staging.droptix.co.uk` as an orange-clouded A record pointing at the CyberPanel IP
+- Add `droptix.co.uk` as an orange-clouded A record pointing at the CyberPanel IP
 - **SSL/TLS → Full (strict)** (we already issued LE on the origin)
 - **Rules → Page Rules**: cache `*.droptix.co.uk/*.{css,js,woff2,avif,webp,svg}` edge TTL 1 month
 - **Images** product enabled for CDN resizing (replaces Imgproxy)
@@ -121,11 +124,13 @@ Set under repo **Settings → Environments → staging**:
 
 Pushes to `main` now redeploy automatically.
 
-## 8. Cutover to apex (later)
+## 8. Take the legacy Laravel down cleanly
 
-When Phase 3 ships and we're ready to replace the old Laravel:
+Once the new Node app is responding on `droptix.co.uk`:
 
-1. Create a CyberPanel website for `droptix.co.uk` (apex)
-2. Point its proxy rule at `127.0.0.1:3000` (same Node process)
-3. Update Cloudflare DNS so apex + www hit the new vhost
-4. Archive the Laravel vhost; keep the DB dump for data migration
+1. Keep a MariaDB dump of the old `droptix` DB for reference (don't delete)
+   `mysqldump -u root -p droptix > /root/droptix-legacy-$(date +%F).sql.gz`
+2. Archive `/home/droptix.co.uk/public_html` for reference
+   `sudo mv /home/droptix.co.uk/public_html /home/droptix.co.uk/public_html.laravel-archive`
+3. The Node app now owns apex via the proxy rules above
+4. Cloudflare: apex A record already points at the server IP; nothing to change

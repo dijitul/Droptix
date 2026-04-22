@@ -7,7 +7,7 @@ one-time prep that enables that flow.
 ## 1. On the CyberPanel server — create the app directory & user
 
 ```bash
-# As the vhost owner (usually the cyberpanel-created user for staging.droptix.co.uk):
+# As the vhost owner (usually the cyberpanel-created user for droptix.co.uk):
 mkdir -p ~/apps/droptix
 cd ~/apps/droptix
 git clone https://github.com/dijitul/Droptix.git .
@@ -43,9 +43,9 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 
 | Name                   | Value                                                 |
 |------------------------|-------------------------------------------------------|
-| `CYBERPANEL_HOST`      | server IP or hostname (e.g. `staging.droptix.co.uk`)  |
+| `CYBERPANEL_HOST`      | server IP or hostname (e.g. `droptix.co.uk`)  |
 | `CYBERPANEL_USER`      | vhost user that owns `~/apps/droptix`                 |
-| `CYBERPANEL_APP_DIR`   | absolute path, e.g. `/home/staging.droptix.co.uk/apps/droptix` |
+| `CYBERPANEL_APP_DIR`   | absolute path, e.g. `/home/droptix.co.uk/apps/droptix` |
 | `CYBERPANEL_SSH_KEY`   | the private key from step 2 (full file contents)      |
 | `CYBERPANEL_KNOWN_HOSTS` | the `ssh-keyscan` output from step 3                |
 
@@ -59,8 +59,8 @@ cp .env.example .env.production
 #   DATABASE_URL=mysql://droptix:<PWD>@127.0.0.1:3306/droptix_new
 #   AUTH_SECRET=<openssl rand -base64 32>
 #   INTEGRATIONS_ENCRYPTION_KEY=<openssl rand -base64 32>
-#   NEXT_PUBLIC_APP_URL=https://staging.droptix.co.uk
-#   AUTH_URL=https://staging.droptix.co.uk
+#   NEXT_PUBLIC_APP_URL=https://droptix.co.uk
+#   AUTH_URL=https://droptix.co.uk
 
 pnpm install --frozen-lockfile
 pnpm db:generate
