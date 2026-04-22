@@ -31,7 +31,7 @@ export default function FeesPage() {
             <p>
               Promoters processing over <strong className="text-primary">£50,000 GMV per quarter</strong>{' '}
               automatically drop to <strong className="text-primary">3.5% + £0.40</strong>. No
-              negotiation, no paperwork, no "contact sales". The admin applies the lower rule and it
+              negotiation, no paperwork, no &ldquo;contact sales&rdquo;. The admin applies the lower rule and it
               takes effect next session.
             </p>
           </Section>
