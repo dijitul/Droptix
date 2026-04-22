@@ -4,7 +4,7 @@ This file primes any Claude session working on this repo. Read top-to-bottom bef
 
 ## What is this
 
-**Droptix** is a UK-focused event ticket marketplace. Target: small events (gigs, club nights, comedy, community). The wedge vs Skiddle/Fatsoma/DICE/Eventbrite is **lower configurable fees + organiser-first tooling + UK-native UX**.
+**Droptix** is a **UK-focused music ticket marketplace** (scope: music only — gigs, club nights, festivals). The wedge vs Skiddle/Fatsoma/DICE/Eventbrite is **lower configurable fees + organiser-first tooling + UK-native brutalist aesthetic**.
 
 This repo is a **full greenfield rewrite** of a purchased Laravel 9 script that had architectural problems (floats for money, global-only commission, forgeable QR payloads, no image crop). The legacy code stays read-only on the server at `public_html.laravel-backup-*` for data-migration reference.
 
@@ -129,16 +129,28 @@ pnpm test                 # vitest for lib/
 pnpm test:e2e             # Playwright + axe
 ```
 
-## Phase roadmap (see docs/phase-roadmap.md for detail)
+## Phase roadmap
 
-- ✅ **Phase 0a** — scaffold, schema, money/commission/ticket libs
-- ✅ **Phase 0b** — auth, Stripe/Postmark/R2 clients, shadcn UI, login UX
-- ✅ **Phase 0c** — admin shell + integrations panel + promote-admin script
-- ✅ **Phase 1a** — buyer checkout vertical end-to-end (LIVE)
-- 🔜 **Phase 1b** — Apple/Google Wallet passes, city/category hubs, homepage polish
-- 🔜 **Phase 2** — organiser side (Stripe Connect, event wizard with image crop, dashboard, scanner PWA)
-- 🔜 **Phase 3** — full admin (commission editor, payout/dispute queue, KPIs)
+- ✅ **Phase 0** (a,b,c) — scaffold, schema, auth, Stripe/Postmark/R2 clients, admin shell + integrations panel
+- ✅ **Phase 1a** — buyer checkout vertical end-to-end
+- ✅ **Phase 1b** — brand rebrand (Overdrive Industrial), nav/footer, music-only scope, /cities + /uk/[city] + /uk/[city]/[category] + /genres + /genres/[slug] hubs, /sell + /sell/fees landing, 404, enriched sitemap
+- ✅ **Phase 2** — organiser side: /sell/start + /organiser layout + dashboard + Stripe Connect Express onboarding + event CRUD + in-browser image crop → R2 + attendees + CSV export + door scanner PWA (first-scan-wins via row-locked tx)
+- 🔜 **Phase 1c** — Apple Wallet + Google Wallet pass generation (needs Apple cert + Google service account)
+- 🔜 **Phase 2c** — scanner service worker + IndexedDB offline sync, scanner crew PIN flow, manual door-code fallback
+- 🔜 **Phase 3** — full admin (commission editor, payout/dispute queue, platform KPIs, audit viewer)
 - 🔜 **Phase 4** — SEO moat, a11y audit, load test, security review, legal review, Skiddle/Fatsoma CSV importer
+
+## Design system — Overdrive Industrial
+
+High-contrast brutalist on a near-black olive (`#111508`) background:
+- **Primary** = Electric Lime `#abd600` (hover `#c3f400`)
+- **Secondary** = Hazard Orange `#ff5e07`
+- **Tertiary** = Vibrant Cyan `#7df4ff` (tech labels, categories, cursors)
+- **Type**: Space Grotesk (display, tight uppercase) + Inter (body). Via `next/font/google`.
+- **Shape**: sharp, max 4px radius. No `rounded-xl` / `rounded-2xl` / `rounded-full` except true circles.
+- **Depth**: tonal layering (`bg-surface-container-high` etc), NEVER traditional shadows. `shadow-glow` only for active-ticket lime bloom.
+- **Signature motifs**: `.hazard-stripe`, `.tech-divider`, `label-tech` uppercase letter-spaced labels, noise-grain body background.
+- **Button default** = solid lime, ink text, 2px border, Space Grotesk uppercase.
 
 ## Tripping hazards I already hit (don't re-litigate)
 
@@ -149,6 +161,12 @@ pnpm test:e2e             # Playwright + axe
 - **Stripe SDK apiVersion** must match the SDK's supported version literal (currently `'2025-02-24.acacia'`). Updating the SDK may require updating this.
 - **Auth.js User type** in `signIn` event doesn't expose `emailVerified` — query DB.
 - **Postmark TrackLinks** uses `Models.LinkTrackingOptions.None` enum, not the string `'None'`.
+- **`jsx-a11y/label-has-associated-control`** can't trace `<label>{labelProp}</label>` through a wrapper component — add `aria-label` + scoped `eslint-disable-next-line`.
+- **Tailwind opacity on CSS-var colours**: values must be space-separated RGB triplets (`171 214 0`, not `#abd600`) so `bg-primary/60` works.
+- **Next.js standalone output**: after each build, copy `public/` and `.next/static/` into `.next/standalone/` before PM2 reload or static assets 404.
+- **BullMQ worker ESM hoist**: imports hoist before inline code, so `@/lib/env` validates before any inline env-loader runs. The worker imports `./load-env` first — a zero-import side-effect module.
+- **First-scan-wins on MariaDB**: no partial unique indexes. `src/server/scanning.ts` uses `SELECT ... FOR UPDATE` inside a tx to serialise concurrent scans. Don't regress to app-only checks.
+- **OLS vhost proxy**: `extprocessor` must be declared in the same vhost.conf as the `context /` that references it (server-level declaration isn't picked up).
 
 ## Useful prompts for future sessions
 
