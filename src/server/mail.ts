@@ -1,4 +1,4 @@
-import { ServerClient as PostmarkClient } from 'postmark';
+import { ServerClient as PostmarkClient, Models as PostmarkModels } from 'postmark';
 import { requireIntegration, getIntegration } from './integrations';
 
 /**
@@ -41,6 +41,6 @@ export async function sendMail(params: {
       ? Object.entries(params.headers).map(([Name, Value]) => ({ Name, Value }))
       : undefined,
     TrackOpens: false, // deliberate — don't burn privacy trust
-    TrackLinks: 'None',
+    TrackLinks: PostmarkModels.LinkTrackingOptions.None,
   });
 }
