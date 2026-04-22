@@ -31,7 +31,6 @@ export function SiteFooter() {
         <FooterColumn title="Promoters">
           <FooterLink href="/sell">Put an event on sale</FooterLink>
           <FooterLink href="/sell/fees">Fees & payouts</FooterLink>
-          <FooterLink href="/sell/tools">Tools</FooterLink>
           <FooterLink href="/login">Organiser sign-in</FooterLink>
         </FooterColumn>
 
