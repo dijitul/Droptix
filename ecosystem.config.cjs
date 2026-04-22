@@ -7,13 +7,17 @@ module.exports = {
     {
       name: 'droptix',
       script: '.next/standalone/server.js',
-      instances: 'max',
-      exec_mode: 'cluster',
-      max_memory_restart: '512M',
+      // Single instance on the 2GB CyberPanel box — cluster mode needs more
+      // headroom than we have. Bump to 'max' only after a server upgrade.
+      instances: 1,
+      exec_mode: 'fork',
+      max_memory_restart: '600M',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
-        HOSTNAME: '0.0.0.0',
+        // Port 3000 is taken by CyberPanel's nghttpx HTTP/2 proxy on this
+        // server; 3001 is the free local port OpenLiteSpeed's vhost proxies to.
+        PORT: 3001,
+        HOSTNAME: '127.0.0.1',
       },
       error_file: 'logs/web-error.log',
       out_file: 'logs/web-out.log',
