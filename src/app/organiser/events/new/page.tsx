@@ -178,7 +178,6 @@ function StatusRadio({
   defaultChecked?: boolean;
 }) {
   return (
-    // eslint-disable-next-line jsx-a11y/label-has-associated-control -- label has associated control via htmlFor + nested input with matching id; rule's static analysis doesn't trace the {label} prop
     <label
       htmlFor={id}
       aria-label={label}
