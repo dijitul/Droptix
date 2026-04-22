@@ -1,0 +1,14 @@
+# Normalise line endings: LF on disk in the repo, auto on checkout.
+* text=auto eol=lf
+
+# Never munge binary files.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff2 binary
+*.pdf binary
+*.zip binary

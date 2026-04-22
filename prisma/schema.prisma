@@ -1,0 +1,754 @@
+// ─────────────────────────────────────────────────────────────
+// Droptix — MariaDB schema
+// ─────────────────────────────────────────────────────────────
+//
+// Money rule: every monetary column is `BigInt` (minor units / pence)
+// with a companion `currency` column. Never `Decimal`, never `Float`.
+//
+// Commission rules are versioned by `effectiveFrom` — existing rows
+// are immutable so audits can reproduce historical invoices.
+//
+// Scan events are append-only: first-scan-wins is enforced at the
+// application layer via `SELECT ... FOR UPDATE` on the ticket row
+// inside a transaction (MariaDB lacks partial unique indexes).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// MariaDB on the existing CyberPanel server. Prisma's `mysql` provider
+// speaks MariaDB 10.5+ fine. We give up PG niceties (citext, partial
+// unique indexes, JSONB, pg_trgm) for deployment speed and reuse of
+// the existing DB server. Case-insensitive email matching relies on
+// the default `utf8mb4_unicode_ci` collation that CyberPanel's MariaDB
+// ships with; first-scan-wins is enforced via transactional row locks
+// in application code (see src/server/scanning.ts — Phase 2).
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Enums
+// ═══════════════════════════════════════════════════════════════
+
+enum Currency {
+  GBP
+  EUR
+  USD
+}
+
+enum UserRole {
+  BUYER
+  ORGANISER
+  ADMIN
+  SUPERADMIN
+}
+
+enum OrganiserStatus {
+  PENDING       // awaiting admin approval
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum EventStatus {
+  DRAFT
+  SCHEDULED
+  ON_SALE
+  SOLD_OUT
+  POSTPONED
+  RESCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum EventAttendanceMode {
+  OFFLINE       // schema.org OfflineEventAttendanceMode
+  ONLINE
+  MIXED
+}
+
+enum AgeRating {
+  ALL
+  AGE_14_PLUS
+  AGE_16_PLUS
+  AGE_18_PLUS
+  AGE_21_PLUS
+}
+
+enum OrderStatus {
+  PENDING       // checkout session created, awaiting webhook
+  PAID
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  FAILED
+}
+
+enum TicketStatus {
+  ISSUED        // valid, unscanned
+  SCANNED       // redeemed at door
+  VOIDED        // refunded or revoked
+  TRANSFERRED   // handed off to another user
+}
+
+enum ScanStatus {
+  ACCEPTED      // first valid scan — ticket marked SCANNED
+  REJECTED_INVALID_SIG
+  REJECTED_NOT_FOUND
+  REJECTED_WRONG_EVENT
+  REJECTED_ALREADY_SCANNED
+  REJECTED_VOIDED
+  REJECTED_NOT_YET_VALID
+  OFFLINE_ACCEPTED_PENDING  // PWA accepted offline, awaiting server reconcile
+}
+
+enum RefundReason {
+  REQUESTED_BY_CUSTOMER
+  EVENT_CANCELLED
+  EVENT_POSTPONED
+  ORGANISER_GOODWILL
+  FRAUD
+  DUPLICATE_CHARGE
+}
+
+enum PayoutStatus {
+  PENDING
+  IN_TRANSIT
+  PAID
+  FAILED
+  REVERSED
+}
+
+enum FeeMode {
+  PASSED_TO_BUYER
+  ABSORBED_BY_ORGANISER
+}
+
+enum IntegrationProvider {
+  STRIPE
+  POSTMARK
+  RESEND
+  CLOUDFLARE_R2
+  CLOUDFLARE_IMAGES
+  HCAPTCHA
+  SENTRY
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Auth (Auth.js compatible)
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique @db.VarChar(255)
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  role          UserRole  @default(BUYER)
+  locale        String    @default("en-GB")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Auth.js relations
+  accounts Account[]
+  sessions Session[]
+
+  // Domain relations
+  organiserMembers OrganiserMember[]
+  orders           Order[]
+  tickets          Ticket[]          @relation("TicketHolder")
+  wishlist         Wishlist[]
+  scannerCrew      ScannerCrew[]
+  adminActions     AdminAudit[]
+
+  @@index([role])
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Organisers
+// ═══════════════════════════════════════════════════════════════
+
+model Organiser {
+  id                String          @id @default(cuid())
+  slug              String          @unique
+  name              String
+  legalName         String?
+  email             String          @db.VarChar(255)
+  phone             String?
+  websiteUrl        String?
+  description       String?         @db.Text
+  logoImageId       String?
+  heroImageId       String?
+  city              String?
+  status            OrganiserStatus @default(PENDING)
+  verifiedAt        DateTime?       // "Verified organiser" badge
+
+  // Stripe Connect
+  stripeAccountId   String?         @unique
+  stripeChargesEnabled  Boolean     @default(false)
+  stripePayoutsEnabled  Boolean     @default(false)
+  stripeOnboardedAt     DateTime?
+
+  // Payout policy
+  payoutHoldDays        Int         @default(7)
+  instantPayoutEnabled  Boolean     @default(false)
+  successfulEventCount  Int         @default(0)   // graduates payout policy
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logoImage        Image?           @relation("OrganiserLogo", fields: [logoImageId], references: [id])
+  heroImage        Image?           @relation("OrganiserHero", fields: [heroImageId], references: [id])
+  members          OrganiserMember[]
+  events           Event[]
+  commissionRules  CommissionRule[]
+  payouts          Payout[]
+
+  @@index([status])
+  @@index([city])
+}
+
+model OrganiserMember {
+  id          String   @id @default(cuid())
+  organiserId String
+  userId      String
+  role        String   @default("owner") // owner | manager | scanner
+  createdAt   DateTime @default(now())
+
+  organiser Organiser @relation(fields: [organiserId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organiserId, userId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Commission (versioned, immutable once effective)
+// ═══════════════════════════════════════════════════════════════
+
+model CommissionRule {
+  id                 String    @id @default(cuid())
+  organiserId        String?   // null = platform default
+  percentageBps      Int       // 500 = 5.00%
+  perTicketFee       BigInt    // pence
+  currency           Currency  @default(GBP)
+  feeMode            FeeMode   @default(PASSED_TO_BUYER)
+  freeEventsZeroFee  Boolean   @default(true)
+  effectiveFrom      DateTime  @default(now())
+  effectiveUntil     DateTime?
+  note               String?   @db.Text
+  createdByAdminId   String?
+  createdAt          DateTime  @default(now())
+
+  organiser Organiser? @relation(fields: [organiserId], references: [id], onDelete: Cascade)
+
+  @@index([organiserId, effectiveFrom])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Places (venues) + entities (artists)
+// ═══════════════════════════════════════════════════════════════
+
+model Venue {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  postcode       String
+  country        String   @default("GB")
+  latitude       Float?
+  longitude      Float?
+  capacity       Int?
+  accessibilityNotes String? @db.Text
+  heroImageId    String?
+  description    String?  @db.Text
+  websiteUrl     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  heroImage Image?  @relation("VenueHero", fields: [heroImageId], references: [id])
+  events    Event[]
+
+  @@index([city])
+  @@index([slug])
+}
+
+model Artist {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  bio         String?  @db.Text
+  heroImageId String?
+  spotifyId   String?
+  appleMusicId String?
+  wikidataId  String?
+  websiteUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  heroImage Image?         @relation("ArtistHero", fields: [heroImageId], references: [id])
+  events    EventArtist[]
+
+  @@index([slug])
+}
+
+model EventArtist {
+  eventId  String
+  artistId String
+  role     String   @default("performer") // headliner | support | dj | host
+  order    Int      @default(0)
+
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, artistId])
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  name      String
+  parentId  String?
+  order     Int     @default(0)
+
+  parent   Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryParent")
+  events   EventCategory[]
+
+  @@index([parentId])
+}
+
+model EventCategory {
+  eventId    String
+  categoryId String
+
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, categoryId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Events
+// ═══════════════════════════════════════════════════════════════
+
+model Event {
+  id                 String              @id @default(cuid())
+  slug               String              @unique
+  organiserId        String
+  venueId            String?
+  title              String
+  subtitle           String?
+  description        String              @db.Text
+  status             EventStatus         @default(DRAFT)
+  attendanceMode     EventAttendanceMode @default(OFFLINE)
+  ageRating          AgeRating           @default(ALL)
+  startsAt           DateTime
+  endsAt             DateTime
+  doorsOpenAt        DateTime?
+  timezone           String              @default("Europe/London")
+  heroImageId        String?
+  totalCapacity      Int?
+  currency           Currency            @default(GBP)
+
+  // Signing key for QR codes — rotates per event on create
+  ticketSigningKey   String              @db.Text
+
+  // SEO
+  metaTitle          String?
+  metaDescription    String?             @db.Text
+
+  publishedAt        DateTime?
+  onSaleAt           DateTime?
+  saleClosesAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organiser   Organiser       @relation(fields: [organiserId], references: [id], onDelete: Restrict)
+  venue       Venue?          @relation(fields: [venueId], references: [id])
+  heroImage   Image?          @relation("EventHero", fields: [heroImageId], references: [id])
+  artists     EventArtist[]
+  categories  EventCategory[]
+  ticketTypes TicketType[]
+  orders      Order[]
+  tickets     Ticket[]
+  scanEvents  ScanEvent[]
+  scannerCrew ScannerCrew[]
+  wishlist    Wishlist[]
+  images      EventImage[]
+
+  @@index([status, startsAt])
+  @@index([organiserId])
+  @@index([venueId])
+  @@index([startsAt])
+}
+
+model EventImage {
+  id          String @id @default(cuid())
+  eventId     String
+  imageId     String
+  order       Int    @default(0)
+  caption     String?
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  image Image @relation(fields: [imageId], references: [id])
+
+  @@unique([eventId, order])
+}
+
+model TicketType {
+  id              String   @id @default(cuid())
+  eventId         String
+  name            String           // "General Admission", "VIP"
+  description     String?  @db.Text
+  priceFaceValue  BigInt           // pence — seller's face value
+  currency        Currency @default(GBP)
+  capacity        Int              // hard cap
+  soldCount       Int      @default(0)
+  reservedCount   Int      @default(0)
+  maxPerOrder     Int      @default(10)
+  minPerOrder     Int      @default(1)
+  salesStartAt    DateTime?
+  salesEndAt      DateTime?
+  position        Int      @default(0)
+  isHidden        Boolean  @default(false)  // codes/unlocks only
+  unlockCode      String?  @db.VarChar(255)       // optional access code
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  tickets    Ticket[]
+
+  @@index([eventId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Orders + tickets
+// ═══════════════════════════════════════════════════════════════
+
+model Order {
+  id                String      @id @default(cuid())
+  reference         String      @unique               // human-readable e.g. DRP-7H3K-9M2
+  userId            String?
+  buyerEmail        String      @db.VarChar(255)            // captured even for guest checkout
+  buyerName         String
+  eventId           String
+  status            OrderStatus @default(PENDING)
+  currency          Currency    @default(GBP)
+
+  // Money (all BigInt pence)
+  subtotalAmount    BigInt                            // face value × quantity
+  platformFeeAmount BigInt                            // our take
+  totalAmount       BigInt                            // what buyer pays
+
+  // Commission snapshot at session-create time (immutable record)
+  commissionRuleId  String?
+  commissionSnapshot Json?                            // { percentageBps, perTicketFee, feeMode, ... }
+
+  // Stripe
+  stripeCheckoutSessionId String?  @unique
+  stripePaymentIntentId   String?  @unique
+  stripeConnectAccountId  String?
+
+  ipAddress    String?
+  userAgent    String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  paidAt    DateTime?
+
+  user       User?       @relation(fields: [userId], references: [id])
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  items      OrderItem[]
+  tickets    Ticket[]
+  refunds    Refund[]
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([status])
+  @@index([buyerEmail])
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  ticketTypeId   String
+  quantity       Int
+  unitFaceValue  BigInt                              // snapshot at purchase
+  unitPlatformFee BigInt                             // snapshot
+  currency       Currency @default(GBP)
+
+  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+  tickets    Ticket[]
+
+  @@index([orderId])
+}
+
+model Ticket {
+  id             String       @id @default(cuid())
+  orderId        String
+  orderItemId    String
+  ticketTypeId   String
+  eventId        String
+  holderUserId   String?      // optional — nullable for guest checkout
+  holderName     String
+  holderEmail    String       @db.VarChar(255)
+  status         TicketStatus @default(ISSUED)
+
+  // Short human-readable ref printed on ticket for manual door entry
+  doorCode       String       @unique             // e.g. 7H3K-9M2A
+
+  // QR payload = base64url(id).base64url(hmac_sha256(id || issuedAt, event.ticketSigningKey))
+  issuedAt       DateTime     @default(now())
+
+  // Transfer tracking
+  transferredFromUserId String?
+  transferredAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order      Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem  OrderItem   @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  ticketType TicketType  @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  holder     User?       @relation("TicketHolder", fields: [holderUserId], references: [id])
+  scans      ScanEvent[]
+
+  @@index([orderId])
+  @@index([eventId, status])
+  @@index([holderUserId])
+  @@index([holderEmail])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Scanning (append-only; first-scan-wins)
+// ═══════════════════════════════════════════════════════════════
+
+model ScanEvent {
+  id              String     @id @default(cuid())
+  ticketId        String?                          // null if QR didn't match a real ticket
+  eventId         String
+  scannerCrewId   String?
+  deviceId        String                           // PWA device fingerprint
+  status          ScanStatus
+  scannedAt       DateTime   @default(now())
+  receivedAt      DateTime   @default(now())       // when server got the record (may lag when offline)
+  signatureValid  Boolean?
+  rawPayload      String?    @db.Text              // for debugging offline sync conflicts
+  notes           String?    @db.Text
+
+  ticket       Ticket?       @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  scannerCrew  ScannerCrew?  @relation(fields: [scannerCrewId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([eventId, scannedAt])
+  @@index([scannerCrewId])
+}
+
+// Unique partial index via raw migration: only one ACCEPTED scan per ticket.
+// See prisma/migrations/*_unique_accepted_scan.sql
+
+model ScannerCrew {
+  id            String   @id @default(cuid())
+  eventId       String
+  userId        String?
+  displayName   String
+  pin           String                                 // 6-digit bcrypt hash
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  scans ScanEvent[]
+
+  @@index([eventId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Refunds + payouts
+// ═══════════════════════════════════════════════════════════════
+
+model Refund {
+  id                String       @id @default(cuid())
+  orderId           String
+  amount            BigInt                        // pence
+  currency          Currency     @default(GBP)
+  reason            RefundReason
+  reasonDetail      String?      @db.Text
+  stripeRefundId    String?      @unique
+  reverseTransfer   Boolean      @default(true)
+  reverseAppFee     Boolean      @default(true)
+  createdByAdminId  String?
+  createdAt         DateTime     @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Payout {
+  id                 String       @id @default(cuid())
+  organiserId        String
+  amount             BigInt
+  currency           Currency     @default(GBP)
+  status             PayoutStatus @default(PENDING)
+  stripePayoutId     String?      @unique
+  arrivesAt          DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  organiser Organiser @relation(fields: [organiserId], references: [id], onDelete: Cascade)
+
+  @@index([organiserId, status])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Images
+// ═══════════════════════════════════════════════════════════════
+
+model Image {
+  id             String   @id @default(cuid())
+  r2Key          String   @unique                // path in R2 bucket
+  mimeType       String
+  sizeBytes      Int
+  width          Int
+  height         Int
+  cropX          Int?
+  cropY          Int?
+  cropWidth      Int?
+  cropHeight     Int?
+  originalName   String?
+  uploadedById   String?
+  createdAt      DateTime @default(now())
+
+  // Back-refs
+  eventHeros     Event[]          @relation("EventHero")
+  venueHeros     Venue[]          @relation("VenueHero")
+  artistHeros    Artist[]         @relation("ArtistHero")
+  organiserLogos Organiser[]      @relation("OrganiserLogo")
+  organiserHeros Organiser[]      @relation("OrganiserHero")
+  eventImages    EventImage[]
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Platform ops
+// ═══════════════════════════════════════════════════════════════
+
+model Integration {
+  id            String              @id @default(cuid())
+  provider      IntegrationProvider
+  keyName       String                              // e.g. "stripe.secret_key"
+  encryptedValue String             @db.Text        // AES-256-GCM
+  iv            String                              // base64
+  authTag       String                              // base64
+  environment   String              @default("production") // production | test
+  updatedByAdminId String?
+  updatedAt     DateTime            @updatedAt
+  createdAt     DateTime            @default(now())
+
+  @@unique([provider, keyName, environment])
+  @@index([provider])
+}
+
+model WebhookEvent {
+  id              String   @id @default(cuid())
+  provider        String                          // "stripe"
+  externalId      String                          // stripe event ID for idempotency
+  eventType       String
+  payload         Json
+  processedAt     DateTime?
+  failedAttempts  Int      @default(0)
+  lastError       String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  @@unique([provider, externalId])
+  @@index([eventType])
+  @@index([processedAt])
+}
+
+model Wishlist {
+  userId  String
+  eventId String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+}
+
+model AdminAudit {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String                                 // "commission.update", "organiser.suspend" ...
+  subject   String                                 // "organiser:abc123"
+  before    Json?
+  after     Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([subject])
+  @@index([createdAt])
+}
+
+model FeatureFlag {
+  key         String   @id
+  description String?
+  enabled     Boolean  @default(false)
+  rollout     Int      @default(0)                 // 0-100 percent
+  updatedAt   DateTime @updatedAt
+}
+
+model RateLimit {
+  key       String   @id                           // e.g. ip:1.2.3.4:checkout
+  count     Int      @default(0)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([resetAt])
+}

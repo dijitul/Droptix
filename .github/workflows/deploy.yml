@@ -1,0 +1,47 @@
+name: Deploy to CyberPanel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'staging' || 'preview' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.CYBERPANEL_SSH_KEY }}
+          known_hosts: ${{ secrets.CYBERPANEL_KNOWN_HOSTS }}
+
+      - name: Deploy over SSH
+        env:
+          HOST: ${{ secrets.CYBERPANEL_HOST }}
+          USER: ${{ secrets.CYBERPANEL_USER }}
+          APP_DIR: ${{ secrets.CYBERPANEL_APP_DIR }}
+        run: |
+          ssh $USER@$HOST <<'EOSSH'
+            set -euo pipefail
+            cd ${{ secrets.CYBERPANEL_APP_DIR }}
+            git fetch --all
+            git reset --hard origin/main
+            pnpm install --frozen-lockfile --prod=false
+            pnpm db:generate
+            pnpm db:migrate:deploy
+            pnpm build
+            # Reload the Node process managed by PM2 (installed per CyberPanel
+            # Node.js app convention). Fall back to passenger restart if PM2 isn't present.
+            if command -v pm2 >/dev/null 2>&1; then
+              pm2 reload droptix --update-env
+            else
+              touch tmp/restart.txt
+            fi
+          EOSSH

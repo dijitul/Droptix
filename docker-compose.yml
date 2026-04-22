@@ -1,0 +1,37 @@
+# Local dev only — MariaDB + Redis. Not for production.
+# Production uses CyberPanel's existing MariaDB + Redis on the box
+# (see docs/deploy-cyberpanel.md).
+services:
+  mariadb:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_USER: droptix
+      MARIADB_PASSWORD: droptix
+      MARIADB_DATABASE: droptix_new
+      MARIADB_ROOT_PASSWORD: droptix_root
+    ports: ['3306:3306']
+    volumes:
+      - droptix_db:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports: ['6379:6379']
+    volumes:
+      - droptix_redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  droptix_db:
+  droptix_redis:
