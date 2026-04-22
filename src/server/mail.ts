@@ -21,7 +21,7 @@ export async function sendMail(params: {
   textBody: string;
   messageStream?: string; // 'outbound' | 'broadcast' — Postmark split for deliverability
   headers?: Record<string, string>;
-  attachments?: Array<{ Name: string; Content: string; ContentType: string; ContentID?: string }>;
+  attachments?: Array<{ Name: string; Content: string; ContentType: string; ContentID?: string | null }>;
 }): Promise<void> {
   const fromEmail = (await getIntegration('POSTMARK', 'from_email')) ?? 'tickets@droptix.co.uk';
   const fromName = (await getIntegration('POSTMARK', 'from_name')) ?? 'Droptix';
