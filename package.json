@@ -26,6 +26,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "admin:promote": "tsx scripts/promote-admin.ts",
+    "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
     "prepare": "husky"
   },
   "dependencies": {
