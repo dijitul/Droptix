@@ -8,7 +8,6 @@ import { Money } from '@/lib/money';
 import { formatLongDate, formatEventTime, toIsoLondon } from '@/lib/format';
 import { eventJsonLd, jsonLdScript, breadcrumbsJsonLd } from '@/lib/seo';
 import { env } from '@/lib/env';
-import type { Currency } from '@prisma/client';
 import { CheckoutForm } from './CheckoutForm';
 
 export const dynamic = 'force-dynamic';
@@ -67,20 +66,18 @@ export default async function EventPage({ params }: { params: Promise<Params> })
     <>
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbs) }}
       />
 
       <main id="main" className="mx-auto max-w-5xl px-4 pb-32 pt-6 sm:px-6 sm:pb-16 sm:pt-10">
         {/* Hero */}
         <div className="relative mb-8 aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gradient-to-br from-primary-soft to-primary/20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           {event.heroImage && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={`/api/images/${event.heroImage.id}`}
               alt={event.title}
@@ -154,7 +151,6 @@ export default async function EventPage({ params }: { params: Promise<Params> })
             className="rounded-2xl border border-border bg-card p-5 md:sticky md:top-6 md:self-start md:shadow-sm"
           >
             <CheckoutForm
-              event={{ id: event.id, slug: event.slug, title: event.title, currency: event.currency as Currency }}
               ticketTypes={event.ticketTypes.map((tt) => ({
                 id: tt.id,
                 name: tt.name,

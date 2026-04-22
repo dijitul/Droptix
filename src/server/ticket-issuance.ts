@@ -39,7 +39,6 @@ export async function issueTicketsForOrder(orderId: string): Promise<{ issued: s
       // but loop-until-unique keeps the invariant clean.
       for (let i = 0; i < item.quantity; i++) {
         let doorCode = generateDoorCode();
-        // eslint-disable-next-line no-await-in-loop
         while (await tx.ticket.findUnique({ where: { doorCode } })) {
           doorCode = generateDoorCode();
         }

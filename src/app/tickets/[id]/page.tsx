@@ -72,7 +72,6 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             <>
               <div
                 className="overflow-hidden rounded-xl border border-border"
-                // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: qrSvg }}
                 role="img"
                 aria-label={`QR code for ticket ${ticket.doorCode}`}

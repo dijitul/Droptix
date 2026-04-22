@@ -22,11 +22,9 @@ type TicketTypeView = {
 };
 
 export function CheckoutForm({
-  event,
   ticketTypes,
   cheapestFormatted,
 }: {
-  event: { id: string; slug: string; title: string; currency: Currency };
   ticketTypes: TicketTypeView[];
   cheapestFormatted: string | null;
 }) {
