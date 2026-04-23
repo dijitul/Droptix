@@ -73,27 +73,57 @@ export async function createConnectAccountLink(organiserId: string): Promise<str
   let accountId = organiser.stripeAccountId;
 
   if (!accountId) {
-    // Create a new Express-type connected account scoped to UK.
-    const account = await stripe.accounts.create({
-      type: 'express',
-      country: 'GB',
-      email: organiser.email,
-      business_profile: {
-        name: organiser.name,
-        product_description: 'UK music event tickets via Droptix',
-        url: `${env.NEXT_PUBLIC_APP_URL}/organisers/${organiser.slug}`,
-      },
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      metadata: { droptix_organiser_id: organiser.id },
-    });
-    accountId = account.id;
-    await db.organiser.update({
-      where: { id: organiser.id },
-      data: { stripeAccountId: accountId },
-    });
+    try {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'GB',
+        email: organiser.email,
+        business_profile: {
+          name: organiser.name,
+          product_description: 'UK music event tickets via Droptix',
+          url: `${env.NEXT_PUBLIC_APP_URL}/organisers/${organiser.slug}`,
+        },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        metadata: { droptix_organiser_id: organiser.id },
+      });
+      accountId = account.id;
+      await db.organiser.update({
+        where: { id: organiser.id },
+        data: { stripeAccountId: accountId },
+      });
+    } catch (err) {
+      // Translate Stripe's common platform-side config errors into
+      // actionable messages the organiser (or admin) can act on.
+      const e = err as { type?: string; message?: string; raw?: { message?: string } };
+      const rawMsg = e?.raw?.message ?? e?.message ?? '';
+
+      if (/signed up for Connect/i.test(rawMsg)) {
+        throw new Error(
+          "Droptix's Stripe Connect isn't activated yet. An admin needs to visit " +
+          'https://dashboard.stripe.com/connect (or /test/connect for test mode) and ' +
+          'complete the platform setup. Takes about 5 minutes.',
+        );
+      }
+      if (e?.type === 'StripeAuthenticationError') {
+        throw new Error(
+          "Stripe rejected our API key. An admin needs to re-check the Secret key at /admin/integrations.",
+        );
+      }
+      if (e?.type === 'StripePermissionError') {
+        throw new Error(
+          "Our Stripe account doesn't have permission to create connected accounts. " +
+          'Check that Connect is enabled on the platform account.',
+        );
+      }
+      throw new Error(
+        rawMsg
+          ? `Couldn't create Stripe account: ${rawMsg}`
+          : "Couldn't connect to Stripe — please try again in a minute.",
+      );
+    }
   }
 
   const link = await stripe.accountLinks.create({

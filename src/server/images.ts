@@ -48,11 +48,26 @@ export async function createImageUploadUrl(params: {
   const now = new Date();
   const key = `org/${membership.organiserId}/${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}/${rand}.${ext}`;
 
-  const uploadUrl = await createUploadUrl({
-    key,
-    contentType: params.mimeType,
-    contentLength: params.sizeBytes,
-  });
+  let uploadUrl: string;
+  try {
+    uploadUrl = await createUploadUrl({
+      key,
+      contentType: params.mimeType,
+      contentLength: params.sizeBytes,
+    });
+  } catch (err) {
+    // Most common cause pre-launch: R2 keys haven't been entered at
+    // /admin/integrations. Convert the raw "Missing integration" message
+    // into actionable copy for the organiser.
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/Missing integration CLOUDFLARE_R2/i.test(msg)) {
+      throw new Error(
+        "Image uploads aren't set up yet — an admin needs to add Cloudflare R2 keys at /admin/integrations. " +
+        "You can save the event without artwork and add it later.",
+      );
+    }
+    throw new Error(`Image upload failed: ${msg}`);
+  }
 
   // Insert Image row immediately — we trust the upload or clean up later if it fails.
   const image = await db.image.create({
