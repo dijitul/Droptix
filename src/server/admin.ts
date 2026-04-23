@@ -172,17 +172,63 @@ export async function adminDeleteEvent(eventId: string): Promise<void> {
   const totalSold = event.ticketTypes.reduce((s, t) => s + t.soldCount, 0);
   if (event._count.orders > 0 || event._count.tickets > 0 || totalSold > 0) {
     throw new Error(
-      `Can't hard-delete — this event has ${totalSold} tickets sold. Cancel it instead to trigger refunds.`,
+      `Can't hard-delete — this event has ${totalSold} tickets sold. Cancel it instead to trigger refunds, or use Force delete as SUPERADMIN.`,
     );
   }
 
-  // Delete cascades via Prisma relations onto ticket_types, event_categories,
-  // event_images, etc. No orphan rows left behind.
   await db.event.delete({ where: { id: eventId } });
 
   await audit({
     adminId: admin.id,
     action: 'event.delete',
+    subject: `event:${eventId}`,
+    before: { title: event.title, slug: event.slug },
+  });
+  revalidatePath('/admin/events');
+}
+
+/**
+ * Nuclear force-delete for a stuck event (lingering unpaid orders,
+ * test scans, hung reservations). SUPERADMIN-only. Still refuses if
+ * any PAID tickets are attached — refund-then-cancel is the right
+ * path for real sales.
+ */
+export async function adminForceDeleteEvent(eventId: string): Promise<void> {
+  const admin = await requireSuperAdmin();
+
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    include: {
+      _count: { select: { orders: { where: { status: 'PAID' } } } },
+      ticketTypes: { select: { soldCount: true } },
+    },
+  });
+  if (!event) throw new Error('Event not found.');
+
+  const totalSold = event.ticketTypes.reduce((s, t) => s + t.soldCount, 0);
+  if (totalSold > 0 || event._count.orders > 0) {
+    throw new Error(
+      "Force-delete refuses events with PAID tickets. Cancel + refund first.",
+    );
+  }
+
+  await db.$transaction([
+    db.scanEvent.deleteMany({ where: { eventId } }),
+    db.ticket.deleteMany({ where: { eventId } }),
+    db.refund.deleteMany({ where: { order: { eventId } } }),
+    db.orderItem.deleteMany({ where: { order: { eventId } } }),
+    db.order.deleteMany({ where: { eventId } }),
+    db.ticketType.deleteMany({ where: { eventId } }),
+    db.eventCategory.deleteMany({ where: { eventId } }),
+    db.eventImage.deleteMany({ where: { eventId } }),
+    db.scannerCrew.deleteMany({ where: { eventId } }),
+    db.wishlist.deleteMany({ where: { eventId } }),
+    db.event.delete({ where: { id: eventId } }),
+  ]);
+
+  await audit({
+    adminId: admin.id,
+    action: 'event.force_delete',
     subject: `event:${eventId}`,
     before: { title: event.title, slug: event.slug },
   });
