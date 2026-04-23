@@ -10,19 +10,22 @@ import { toast } from 'sonner';
 import { createImageUploadUrl } from '@/server/images';
 
 type Props = {
-  /** 16/9 hero, 1/1 avatar, 4/5 card etc */
   aspect?: number;
-  /** Called after a successful upload with the new image's ID */
   onUploaded?: (imageId: string, publicUrl: string) => void;
-  /** Initial preview URL if the event already has a hero */
   initialUrl?: string | null;
   label?: string;
 };
 
 /**
  * Drop-in uploader for organiser artwork. Accepts anything the browser
- * can decode (50MB cap), opens an in-page crop UI, produces a JPEG blob,
- * uploads direct to R2 via a presigned URL. No server byte-streaming.
+ * can decode (50MB cap), opens an in-page crop UI, produces a JPEG blob.
+ *
+ * Upload destination depends on backend mode (decided by server):
+ *   - R2 configured → PUT direct to presigned Cloudflare URL
+ *   - R2 absent (default) → POST to /api/uploads/image on our server,
+ *     authorised by a one-time X-Upload-Token header
+ *
+ * The crop + client-side resize UX is identical in both cases.
  */
 export function ImageUploader({
   aspect = 16 / 9,
@@ -105,7 +108,7 @@ export function ImageUploader({
         );
       });
 
-      const { uploadUrl, imageId, publicUrl } = await createImageUploadUrl({
+      const target = await createImageUploadUrl({
         mimeType: 'image/jpeg',
         sizeBytes: blob.size,
         width: targetWidth,
@@ -117,18 +120,35 @@ export function ImageUploader({
         originalName: originalName ?? undefined,
       });
 
-      const putResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: { 'Content-Type': 'image/jpeg' },
-      });
-      if (!putResponse.ok) throw new Error(`Upload failed: ${putResponse.status}`);
+      if (target.mode === 'r2') {
+        // Presigned PUT direct to Cloudflare
+        const putResponse = await fetch(target.uploadUrl, {
+          method: 'PUT',
+          body: blob,
+          headers: { 'Content-Type': 'image/jpeg' },
+        });
+        if (!putResponse.ok) throw new Error(`Upload failed: ${putResponse.status}`);
+      } else {
+        // Local: POST to our own route with the one-time token
+        const postResponse = await fetch(target.uploadPath, {
+          method: 'POST',
+          body: blob,
+          headers: {
+            'Content-Type': 'image/jpeg',
+            'X-Upload-Token': target.uploadToken,
+          },
+        });
+        if (!postResponse.ok) {
+          const text = await postResponse.text().catch(() => '');
+          throw new Error(`Upload failed (${postResponse.status}): ${text.slice(0, 200)}`);
+        }
+      }
 
-      setSrcPreview(publicUrl);
+      setSrcPreview(target.publicUrl);
       setRawImageSrc(null);
       setCrop(undefined);
       setPixelCrop(null);
-      onUploaded?.(imageId, publicUrl);
+      onUploaded?.(target.imageId, target.publicUrl);
       toast.success('Artwork uploaded.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Upload failed.');

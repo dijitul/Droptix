@@ -3,16 +3,47 @@
 import { randomBytes } from 'node:crypto';
 import { requireOrganiser } from './guards';
 import { db } from './db';
-import { createUploadUrl, publicImageUrl } from './r2';
+import { createUploadTarget, publicImageUrl as storagePublicUrl, saveImageBytes } from './storage';
 
 /**
- * Server action used by the in-browser image crop component.
- * Returns a presigned R2 PUT URL the client uses to upload the cropped
- * blob directly. Keeps Droptix out of the upload byte-stream path.
+ * Image upload orchestration.
+ *
+ * Works in one of two modes depending on whether R2 is configured:
+ *
+ *   - R2 active → client gets a presigned PUT URL, uploads direct to
+ *     Cloudflare. Droptix never sees the bytes.
+ *   - Local active → client POSTs the blob to /api/uploads/image, we
+ *     write it under <repo>/uploads/.
+ *
+ * The Image row is inserted BEFORE upload so the server has a persistent
+ * handle for the eventual PUT target. If upload fails we leave an
+ * orphan row (rare; a periodic sweep can GC them).
  */
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
-const MAX_BYTES = 50 * 1024 * 1024; // 50MB raw ceiling — we're not constraining sources
+const MAX_BYTES = 50 * 1024 * 1024;
+
+export type CreateUploadUrlResult =
+  | {
+      mode: 'r2';
+      uploadUrl: string;
+      imageId: string;
+      publicUrl: string;
+      key: string;
+    }
+  | {
+      mode: 'local';
+      uploadPath: string;
+      imageId: string;
+      publicUrl: string;
+      key: string;
+      /** Short-lived token the client sends with the POST so the route
+       *  can authorise writes without re-running Auth.js on each upload. */
+      uploadToken: string;
+    };
+
+const LOCAL_UPLOAD_TOKENS = new Map<string, { imageId: string; expires: number }>();
+const LOCAL_TOKEN_TTL_MS = 10 * 60 * 1000;
 
 export async function createImageUploadUrl(params: {
   mimeType: string;
@@ -24,7 +55,7 @@ export async function createImageUploadUrl(params: {
   cropWidth?: number;
   cropHeight?: number;
   originalName?: string;
-}): Promise<{ uploadUrl: string; imageId: string; publicUrl: string; key: string }> {
+}): Promise<CreateUploadUrlResult> {
   const user = await requireOrganiser();
 
   if (!ALLOWED_MIME.has(params.mimeType)) {
@@ -37,7 +68,6 @@ export async function createImageUploadUrl(params: {
     throw new Error('Image too small — hero images should be at least 1200×675.');
   }
 
-  // Scoped path: /org/<orgId>/<yyyy>/<mm>/<random>.<ext>
   const membership = await db.organiserMember.findFirstOrThrow({
     where: { userId: user.id },
     select: { organiserId: true },
@@ -48,28 +78,6 @@ export async function createImageUploadUrl(params: {
   const now = new Date();
   const key = `org/${membership.organiserId}/${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}/${rand}.${ext}`;
 
-  let uploadUrl: string;
-  try {
-    uploadUrl = await createUploadUrl({
-      key,
-      contentType: params.mimeType,
-      contentLength: params.sizeBytes,
-    });
-  } catch (err) {
-    // Most common cause pre-launch: R2 keys haven't been entered at
-    // /admin/integrations. Convert the raw "Missing integration" message
-    // into actionable copy for the organiser.
-    const msg = err instanceof Error ? err.message : String(err);
-    if (/Missing integration CLOUDFLARE_R2/i.test(msg)) {
-      throw new Error(
-        "Image uploads aren't set up yet — an admin needs to add Cloudflare R2 keys at /admin/integrations. " +
-        "You can save the event without artwork and add it later.",
-      );
-    }
-    throw new Error(`Image upload failed: ${msg}`);
-  }
-
-  // Insert Image row immediately — we trust the upload or clean up later if it fails.
   const image = await db.image.create({
     data: {
       r2Key: key,
@@ -86,10 +94,68 @@ export async function createImageUploadUrl(params: {
     },
   });
 
-  return {
-    uploadUrl,
+  let target: Awaited<ReturnType<typeof createUploadTarget>>;
+  try {
+    target = await createUploadTarget({
+      key,
+      contentType: params.mimeType,
+      contentLength: params.sizeBytes,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Image upload couldn't start: ${msg}`);
+  }
+
+  const publicUrl = await storagePublicUrl(image.id, key, 'hero');
+
+  if (target.mode === 'r2') {
+    return {
+      mode: 'r2',
+      uploadUrl: target.uploadUrl,
+      imageId: image.id,
+      publicUrl,
+      key,
+    };
+  }
+
+  // Local backend: mint a one-time token so the upload route doesn't
+  // need to re-run Auth.js cookies for a binary POST.
+  const uploadToken = randomBytes(24).toString('hex');
+  LOCAL_UPLOAD_TOKENS.set(uploadToken, {
     imageId: image.id,
-    publicUrl: publicImageUrl(key, 'hero'),
+    expires: Date.now() + LOCAL_TOKEN_TTL_MS,
+  });
+
+  // Sweep expired tokens opportunistically
+  for (const [t, info] of LOCAL_UPLOAD_TOKENS) {
+    if (info.expires < Date.now()) LOCAL_UPLOAD_TOKENS.delete(t);
+  }
+
+  return {
+    mode: 'local',
+    uploadPath: target.uploadPath,
+    imageId: image.id,
+    publicUrl,
     key,
+    uploadToken,
   };
+}
+
+/** Called from the /api/uploads/image route to swap token → imageId + validate. */
+export async function consumeUploadToken(token: string): Promise<string | null> {
+  const record = LOCAL_UPLOAD_TOKENS.get(token);
+  if (!record) return null;
+  if (record.expires < Date.now()) {
+    LOCAL_UPLOAD_TOKENS.delete(token);
+    return null;
+  }
+  LOCAL_UPLOAD_TOKENS.delete(token);
+  return record.imageId;
+}
+
+/** Pure write path — called from the upload route after token validation. */
+export async function persistImageBytes(imageId: string, bytes: Buffer): Promise<void> {
+  const image = await db.image.findUnique({ where: { id: imageId } });
+  if (!image) throw new Error('Image record not found.');
+  await saveImageBytes({ key: image.r2Key, data: bytes, mimeType: image.mimeType });
 }
