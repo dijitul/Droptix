@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { db } from '@/server/db';
 import { EventCard } from '@/components/event-card';
 import { Badge } from '@/components/ui/badge';
@@ -44,15 +45,15 @@ export default async function DiscoverPage() {
         <div className="border-2 border-dashed border-outline-variant p-10 text-center">
           <p className="text-muted-foreground">
             No shows live yet. New events are being added every week &mdash;{' '}
-            <a className="text-primary underline" href="/cities">browse by city</a>
+            <Link className="text-primary underline" href="/cities">browse by city</Link>
             {' '}or{' '}
-            <a className="text-primary underline" href="/genres">by genre</a>.
+            <Link className="text-primary underline" href="/genres">by genre</Link>.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Run a show?{' '}
-            <a className="label-tech text-primary underline" href="/sell">
+            <Link className="label-tech text-primary underline" href="/sell">
               Put one on sale
-            </a>
+            </Link>
             .
           </p>
         </div>
