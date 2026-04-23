@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/server/guards';
-import { Ticket, Settings, Users, CreditCard, ShieldCheck, ListChecks, UserCog, Calendar } from 'lucide-react';
+import { Ticket, Settings, Users, CreditCard, ShieldCheck, ListChecks, UserCog, Calendar, MapPin, Building2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export const metadata = { title: 'Admin' };
@@ -27,6 +27,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <NavLink href="/admin" icon={ListChecks}>Dashboard</NavLink>
         <NavLink href="/admin/events" icon={Calendar}>Events</NavLink>
         <NavLink href="/admin/organisers" icon={Users}>Organisers</NavLink>
+        <NavLink href="/admin/venues" icon={Building2}>Venues</NavLink>
+        <NavLink href="/admin/cities" icon={MapPin}>Cities</NavLink>
         <NavLink href="/admin/commission" icon={CreditCard}>Commission rules</NavLink>
         <NavLink href="/admin/payouts" icon={CreditCard}>Payouts</NavLink>
         <NavLink href="/admin/refunds" icon={ShieldCheck}>Refunds & disputes</NavLink>

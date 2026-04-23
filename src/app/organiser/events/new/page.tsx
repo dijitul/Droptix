@@ -11,8 +11,13 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = { title: 'New event' };
 export const dynamic = 'force-dynamic';
 
-export default async function NewEventPage() {
+export default async function NewEventPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ venue?: string }>;
+}) {
   await requireOrganiser();
+  const { venue: preselectVenue } = await searchParams;
 
   const [categories, venues] = await Promise.all([
     db.category.findMany({ orderBy: { order: 'asc' } }),
@@ -70,7 +75,7 @@ export default async function NewEventPage() {
                 id="venueId"
                 name="venueId"
                 className="flex h-11 w-full border-0 border-b border-tertiary bg-surface-container-high px-3 py-2 text-foreground focus-visible:border-b-2 focus-visible:border-primary focus-visible:outline-none"
-                defaultValue=""
+                defaultValue={preselectVenue ?? ''}
               >
                 <option value="">— Pick a venue —</option>
                 {venues.map((v) => (
@@ -80,7 +85,14 @@ export default async function NewEventPage() {
                 ))}
               </select>
               <p className="mt-1 text-xs text-muted-foreground">
-                Can&rsquo;t see your venue? We&rsquo;ll add it — email us for now.
+                Can&rsquo;t see your venue?{' '}
+                <Link
+                  href="/organiser/venues/new?returnTo=/organiser/events/new"
+                  className="text-primary underline"
+                >
+                  Add one now
+                </Link>
+                {' '}&mdash; we&rsquo;ll pop you straight back here.
               </p>
             </div>
           </Section>

@@ -292,6 +292,7 @@ model Venue {
   addressLine1   String
   addressLine2   String?
   city           String
+  cityRefId      String?  // optional link to canonical City row (backfilled)
   postcode       String
   country        String   @default("GB")
   latitude       Float?
@@ -305,10 +306,35 @@ model Venue {
   updatedAt      DateTime @updatedAt
 
   heroImage Image?  @relation("VenueHero", fields: [heroImageId], references: [id])
+  cityRef   City?   @relation(fields: [cityRefId], references: [id])
   events    Event[]
 
   @@index([city])
   @@index([slug])
+  @@index([cityRefId])
+}
+
+// Canonical City row — editorial metadata, featured flag, optional
+// hero artwork. Venue.city (string) stays for fast queries + legacy;
+// cityRefId links to the authoritative City record.
+model City {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String   @unique
+  country       String   @default("GB")        // ISO-3166 alpha-2
+  region        String?                         // e.g. "North West", "Scotland"
+  featured      Boolean  @default(false)        // show on homepage city rail
+  description   String?  @db.Text
+  heroImageId   String?
+  position      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  heroImage Image?  @relation("CityHero", fields: [heroImageId], references: [id])
+  venues    Venue[]
+
+  @@index([featured])
+  @@index([country])
 }
 
 model Artist {
@@ -670,6 +696,7 @@ model Image {
   artistHeros    Artist[]         @relation("ArtistHero")
   organiserLogos Organiser[]      @relation("OrganiserLogo")
   organiserHeros Organiser[]      @relation("OrganiserHero")
+  cityHeros      City[]           @relation("CityHero")
   eventImages    EventImage[]
 }
 
