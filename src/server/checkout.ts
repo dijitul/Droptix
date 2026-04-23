@@ -200,7 +200,38 @@ export async function createCheckoutSession(formData: FormData): Promise<void> {
     };
   }
 
-  const session = await stripe.checkout.sessions.create(sessionParams as never);
+  let session: Awaited<ReturnType<typeof stripe.checkout.sessions.create>>;
+  try {
+    session = await stripe.checkout.sessions.create(sessionParams as never);
+  } catch (err) {
+    // Release the reservation we took before calling Stripe — if we can't
+    // hand over to checkout, nobody should be holding seats.
+    await db.ticketType.update({
+      where: { id: ticketTypeId },
+      data: { reservedCount: { decrement: quantity } },
+    }).catch(() => undefined);
+    await db.order.update({
+      where: { id: order.id },
+      data: { status: 'FAILED' },
+    }).catch(() => undefined);
+
+    // Surface the actual Stripe problem to the admin in a readable way
+    // instead of Next.js's opaque "Server Components error" page.
+    const stripeErr = err as { type?: string; message?: string };
+    if (stripeErr?.type === 'StripeAuthenticationError') {
+      throw new Error(
+        "Stripe rejected our API key. An admin needs to re-check the Secret key at /admin/integrations (it must start with sk_test_ or sk_live_).",
+      );
+    }
+    if (stripeErr?.type === 'StripeInvalidRequestError') {
+      throw new Error(`Stripe refused this request: ${stripeErr.message ?? 'invalid request'}`);
+    }
+    throw new Error(
+      stripeErr?.message
+        ? `Payment provider error: ${stripeErr.message}`
+        : 'Payment provider unavailable — please try again in a minute.',
+    );
+  }
 
   await db.order.update({
     where: { id: order.id },
