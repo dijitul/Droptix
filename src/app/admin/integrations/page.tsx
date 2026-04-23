@@ -47,12 +47,13 @@ const PROVIDERS: ProviderDef[] = [
     ],
   },
   {
-    provider: 'POSTMARK',
-    label: 'Postmark',
-    description: 'Transactional email (magic links, order confirmations, ticket delivery).',
-    docsUrl: 'https://account.postmarkapp.com/servers',
+    provider: 'MAILGUN',
+    label: 'Mailgun (EU)',
+    description: 'Transactional email (magic links, order confirmations, ticket delivery). EU region endpoint: api.eu.mailgun.net.',
+    docsUrl: 'https://app.eu.mailgun.com/app/sending/domains',
     keys: [
-      { name: 'server_token', label: 'Server token', placeholder: 'Postmark server API token' },
+      { name: 'api_key', label: 'API key (Private)', placeholder: 'key-…   (from Domain → API keys → Private API key)' },
+      { name: 'domain', label: 'Sending domain', placeholder: 'mg.droptix.co.uk — the verified sending domain' },
       { name: 'from_email', label: 'From email', placeholder: 'tickets@droptix.co.uk' },
       { name: 'from_name', label: 'From name', placeholder: 'Droptix' },
     ],

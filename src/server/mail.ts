@@ -1,5 +1,4 @@
 import { spawn } from 'node:child_process';
-import { ServerClient as PostmarkClient, Models as PostmarkModels } from 'postmark';
 import { getIntegration } from './integrations';
 import { env } from '@/lib/env';
 
@@ -7,13 +6,14 @@ import { env } from '@/lib/env';
  * Mail sender with graceful fallbacks, so the admin is never locked
  * out of their own site:
  *
- *   1. Postmark (preferred) — if token configured in the integrations vault
+ *   1. Mailgun EU (preferred) — if API key + domain configured in
+ *      /admin/integrations
  *   2. Local sendmail (default on CyberPanel / Postfix boxes)
- *   3. Console log to PM2 stdout — user can `pm2 logs droptix` to grab the
- *      magic-link URL
+ *   3. Console log to PM2 stdout — user can `pm2 logs droptix` to grab
+ *      the magic-link URL
  *
- * Priority is tight: the moment a Postmark token is entered at
- * /admin/integrations, all traffic routes there — no redeploy needed.
+ * Priority is tight: the moment a Mailgun API key + domain are entered
+ * at /admin/integrations, all traffic routes there — no redeploy needed.
  */
 
 export type MailAddress = { email: string; name?: string };
@@ -23,48 +23,33 @@ export type SendMailParams = {
   subject: string;
   htmlBody: string;
   textBody: string;
-  messageStream?: string;
   headers?: Record<string, string>;
 };
 
+const MAILGUN_EU_BASE = 'https://api.eu.mailgun.net/v3';
+
 export async function sendMail(params: SendMailParams): Promise<void> {
-  const [postmarkToken, fromEmailCfg, fromNameCfg] = await Promise.all([
-    getIntegration('POSTMARK', 'server_token'),
-    getIntegration('POSTMARK', 'from_email'),
-    getIntegration('POSTMARK', 'from_name'),
+  const [mailgunKey, mailgunDomain, fromEmailCfg, fromNameCfg] = await Promise.all([
+    getIntegration('MAILGUN', 'api_key'),
+    getIntegration('MAILGUN', 'domain'),
+    getIntegration('MAILGUN', 'from_email'),
+    getIntegration('MAILGUN', 'from_name'),
   ]);
   const fromEmail = fromEmailCfg ?? 'tickets@droptix.co.uk';
   const fromName = fromNameCfg ?? 'Droptix';
   const toList = Array.isArray(params.to) ? params.to : [params.to];
 
-  // ── 1. Postmark ────────────────────────────────────────────
-  if (postmarkToken) {
+  // ── 1. Mailgun EU ──────────────────────────────────────────
+  if (mailgunKey && mailgunDomain) {
     try {
-      const postmark = new PostmarkClient(postmarkToken);
-      await postmark.sendEmail({
-        From: `${fromName} <${fromEmail}>`,
-        To: toList.map((t) => (t.name ? `${t.name} <${t.email}>` : t.email)).join(', '),
-        Subject: params.subject,
-        HtmlBody: params.htmlBody,
-        TextBody: params.textBody,
-        MessageStream: params.messageStream ?? 'outbound',
-        Headers: params.headers
-          ? Object.entries(params.headers).map(([Name, Value]) => ({ Name, Value }))
-          : undefined,
-        TrackOpens: false,
-        TrackLinks: PostmarkModels.LinkTrackingOptions.None,
-      });
+      await sendViaMailgun({ ...params, fromEmail, fromName, toList, apiKey: mailgunKey, domain: mailgunDomain });
       return;
     } catch (err) {
-      console.warn('[mail] Postmark send failed, falling back to sendmail:', err instanceof Error ? err.message : err);
+      console.warn('[mail] Mailgun send failed, falling back to sendmail:', err instanceof Error ? err.message : err);
     }
   }
 
   // ── 2. Local sendmail ──────────────────────────────────────
-  // Works on any CyberPanel / Postfix / Exim server. Cheap, reliable
-  // enough for transactional admin + magic links. Not a long-term
-  // answer (deliverability) — Postmark takes over the moment its
-  // token is set.
   try {
     await sendViaSendmail({ ...params, fromEmail, fromName, toList });
     return;
@@ -73,14 +58,54 @@ export async function sendMail(params: SendMailParams): Promise<void> {
   }
 
   // ── 3. Console log fallback ────────────────────────────────
-  // Last-resort: dump the email to server logs so an admin can SSH
-  // in, `pm2 logs droptix`, copy out the magic-link URL. Only matters
-  // on first-boot before Postmark / sendmail are working.
   console.warn('[mail] ALL SENDERS FAILED — logging email so it isn\'t lost:');
   console.warn('  To:', toList.map((t) => t.email).join(', '));
   console.warn('  Subject:', params.subject);
   console.warn('  Body (text):');
   console.warn('  ' + params.textBody.split('\n').join('\n  '));
+}
+
+async function sendViaMailgun(params: SendMailParams & {
+  fromEmail: string;
+  fromName: string;
+  toList: MailAddress[];
+  apiKey: string;
+  domain: string;
+}): Promise<void> {
+  const body = new URLSearchParams();
+  body.append('from', `${params.fromName} <${params.fromEmail}>`);
+  for (const r of params.toList) {
+    body.append('to', r.name ? `${r.name} <${r.email}>` : r.email);
+  }
+  body.append('subject', params.subject);
+  body.append('text', params.textBody);
+  body.append('html', params.htmlBody);
+  body.append('o:tracking-clicks', 'no');
+  body.append('o:tracking-opens', 'no');
+  if (params.headers) {
+    for (const [k, v] of Object.entries(params.headers)) {
+      body.append(`h:${k}`, v);
+    }
+  }
+
+  const auth = Buffer.from(`api:${params.apiKey}`).toString('base64');
+  const url = `${MAILGUN_EU_BASE}/${encodeURIComponent(params.domain)}/messages`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: body.toString(),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Mailgun ${res.status}: ${text.slice(0, 300)}`);
+  }
+  const to = params.toList.map((t) => t.email).join(', ');
+  console.log(`[mail] sent via Mailgun EU → ${to}`);
 }
 
 function sendViaSendmail(params: SendMailParams & {
