@@ -42,6 +42,11 @@ function dedupeHeaderValue(v: string): string {
   return parts[0] ?? '';
 }
 
+/** Public site URL — never trust proxy-forwarded host for redirects. */
+function getAppBaseUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://droptix.co.uk';
+}
+
 export async function middleware(req: NextRequest) {
   const headers = new Headers(req.headers);
   let mutated = false;
@@ -65,7 +70,11 @@ export async function middleware(req: NextRequest) {
       req.cookies.get('__Secure-authjs.session-token');
 
     if (!sessionCookie) {
-      const loginUrl = new URL('/login', req.url);
+      // Build the redirect from NEXT_PUBLIC_APP_URL, NOT from req.url —
+      // req.url inside middleware is the INTERNAL URL (http://localhost:3001/...)
+      // because Node is behind an OpenLiteSpeed proxy. Using it produces
+      // browser-breaking "https://localhost:3001/login?from=/admin" redirects.
+      const loginUrl = new URL('/login', getAppBaseUrl());
       loginUrl.searchParams.set('from', pathname);
       return NextResponse.redirect(loginUrl);
     }
@@ -78,8 +87,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Run on every non-static, non-internal request, including /api/auth/*
-  // and server-action POSTs.
   matcher: [
     '/((?!_next/|_vercel/|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2|woff|txt|xml|json|map|webmanifest)$).*)',
   ],

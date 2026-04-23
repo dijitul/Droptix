@@ -4,24 +4,17 @@
  * Usage:
  *    pnpm admin:bootstrap <email>
  *
- * What it does:
- *   1. Creates (or finds) a User by email
- *   2. Promotes them to SUPERADMIN
- *   3. Creates a valid Session row in the DB
- *   4. Prints a ready-to-paste browser cookie that logs you in instantly
+ * Prints a ONE-CLICK URL. Click it in your browser, the /api/admin/bootstrap
+ * route sets the session cookie server-side and forwards you to /admin.
  *
- * Paste the printed cookie into your browser (DevTools → Application →
- * Cookies → droptix.co.uk), refresh, and you're signed in as SUPERADMIN.
- * Then head straight to /admin/integrations and add your Stripe/Postmark
- * keys. Once Postmark is set, regular magic-link flow takes over.
+ * Then go to /admin/integrations and add Postmark + Stripe keys, at which
+ * point the regular magic-link flow takes over.
  */
 
 import { PrismaClient } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 
 const db = new PrismaClient();
-const COOKIE_NAME = 'authjs.session-token';
-const SECURE_COOKIE_NAME = '__Secure-authjs.session-token';
 const DEFAULT_TTL_DAYS = 30;
 
 async function main() {
@@ -45,52 +38,28 @@ async function main() {
   const expires = new Date(Date.now() + DEFAULT_TTL_DAYS * 24 * 60 * 60 * 1000);
 
   await db.session.create({
-    data: {
-      sessionToken,
-      userId: user.id,
-      expires,
-    },
+    data: { sessionToken, userId: user.id, expires },
   });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://droptix.co.uk';
-  const isHttps = appUrl.startsWith('https://');
-  const cookieName = isHttps ? SECURE_COOKIE_NAME : COOKIE_NAME;
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://droptix.co.uk').replace(/\/$/, '');
+  const bootstrapUrl = `${appUrl}/api/admin/bootstrap?t=${sessionToken}`;
 
   console.log('');
   console.log('═══════════════════════════════════════════════════════════');
-  console.log(' ✓ Bootstrap session created');
+  console.log(`  ✓ ${email} is SUPERADMIN  (expires ${expires.toISOString().slice(0, 16)}Z)`);
   console.log('═══════════════════════════════════════════════════════════');
   console.log('');
-  console.log(`  User         : ${user.email}`);
-  console.log(`  Role         : SUPERADMIN`);
-  console.log(`  Expires      : ${expires.toISOString()}`);
+  console.log('  Click this URL in your browser — sets the session cookie');
+  console.log('  and forwards you to /admin:');
   console.log('');
-  console.log('─── Paste this cookie into your browser ───────────────────');
+  console.log(`    ${bootstrapUrl}`);
   console.log('');
-  console.log(`  Cookie name  : ${cookieName}`);
-  console.log(`  Cookie value : ${sessionToken}`);
-  console.log(`  Domain       : ${new URL(appUrl).hostname}`);
-  console.log(`  Path         : /`);
-  console.log(`  Secure       : ${isHttps ? 'yes' : 'no'}`);
-  console.log(`  HttpOnly     : yes`);
-  console.log(`  SameSite     : Lax`);
-  console.log('');
-  console.log('─── How ───────────────────────────────────────────────────');
-  console.log('');
-  console.log(`  1. Open ${appUrl} in your browser`);
-  console.log('  2. DevTools → Application → Cookies → select the site');
-  console.log('  3. Add new cookie with the name + value above');
-  console.log('  4. Refresh the page');
-  console.log('  5. You are signed in. Go to /admin/integrations.');
-  console.log('');
-  console.log('  (Alternative: copy-paste this into the browser console');
-  console.log("   while on the site — it'll set the cookie for you:)");
-  console.log('');
-  console.log(
-    `     document.cookie = '${cookieName}=${sessionToken}; Path=/; ${isHttps ? 'Secure; ' : ''}SameSite=Lax; Max-Age=${DEFAULT_TTL_DAYS * 24 * 60 * 60}';`,
-  );
+  console.log('  (Works without any DevTools fiddling. One-time use is');
+  console.log('   fine — you can run this script again any time to get a');
+  console.log('   fresh URL.)');
   console.log('');
   console.log('═══════════════════════════════════════════════════════════');
+  console.log('');
 }
 
 main()
