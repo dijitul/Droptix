@@ -38,12 +38,15 @@ export default async function HomePage() {
           <Badge variant="tech" className="mb-6">
             Droptix · UK live music
           </Badge>
-          <h1 className="text-display-xl uppercase max-w-[20ch]">
-            Tickets for rooms<br />that actually sweat.
+          <h1 className="text-display-xl uppercase max-w-[22ch]">
+            UK gig and club night tickets, direct from promoters.
           </h1>
+          <p className="mt-5 font-display text-xl font-bold uppercase tracking-tight text-primary">
+            Tickets for rooms that actually sweat.
+          </p>
           <p className="mt-6 max-w-prose text-lg text-on-surface-variant">
-            Independent UK gigs, club nights and festivals. Lower fees than Skiddle. Faster payouts
-            than Eventbrite. Built by people who still go to shows.
+            Independent UK gigs, club nights and festivals. Fairer fees, faster payouts, and
+            tickets built by people who still go to shows.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
@@ -52,7 +55,7 @@ export default async function HomePage() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/sell">Put an event on sale</Link>
+              <Link href="/sell">Put a show on sale</Link>
             </Button>
           </div>
 
@@ -61,7 +64,7 @@ export default async function HomePage() {
             <FeatureStat
               icon={PoundSterling}
               label="Fees"
-              value="5% + 50p"
+              value="5% + £0.50"
               note="Beats Skiddle, DICE, Eventbrite. Configurable per promoter."
             />
             <FeatureStat
@@ -151,7 +154,7 @@ export default async function HomePage() {
               <ComparisonCell>30 days<br /><small>Eventbrite</small></ComparisonCell>
               <ComparisonCell>Queue pages<br /><small>Ticketmaster</small></ComparisonCell>
 
-              <ComparisonCell highlight>5% + 50p<br /><small>Droptix</small></ComparisonCell>
+              <ComparisonCell highlight>5% + £0.50<br /><small>Droptix</small></ComparisonCell>
               <ComparisonCell highlight>7 days<br /><small>Droptix</small></ComparisonCell>
               <ComparisonCell highlight>Instant buy<br /><small>Droptix</small></ComparisonCell>
             </dl>

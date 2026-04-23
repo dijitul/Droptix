@@ -8,11 +8,12 @@ export const metadata = {
 export default function TermsPage() {
   return (
     <main id="main" className="container max-w-3xl py-12 sm:py-16">
-      <Badge variant="tech" className="mb-4">Legal · Draft</Badge>
+      <Badge variant="tech" className="mb-4">Legal</Badge>
       <h1 className="text-display-lg uppercase">Terms of service</h1>
       <p className="mt-4 text-sm text-muted-foreground">
-        Placeholder &mdash; full terms will be reviewed with counsel before launch marketing.
-        Nothing here constitutes legal advice; reach out to support@droptix.co.uk with questions.
+        Last updated: <time dateTime="2026-04-23">23 April 2026</time>. Material changes get a
+        30-day heads-up by email. Questions? Email{' '}
+        <a href="mailto:support@droptix.co.uk" className="text-primary underline">support@droptix.co.uk</a>.
       </p>
 
       <div className="prose prose-invert mt-10 max-w-none">

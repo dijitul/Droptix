@@ -8,11 +8,12 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <main id="main" className="container max-w-3xl py-12 sm:py-16">
-      <Badge variant="tech" className="mb-4">Legal · Draft</Badge>
+      <Badge variant="tech" className="mb-4">Legal</Badge>
       <h1 className="text-display-lg uppercase">Privacy policy</h1>
       <p className="mt-4 text-sm text-muted-foreground">
-        Placeholder &mdash; full policy + cookie notice will be reviewed with counsel before
-        launch marketing. Data-subject requests:{' '}
+        Last updated: <time dateTime="2026-04-23">23 April 2026</time>. Short version: we collect
+        the minimum to sell you a ticket, your card details never touch our servers, and we
+        don&rsquo;t sell anything to anyone. Data-subject requests:{' '}
         <a href="mailto:privacy@droptix.co.uk" className="text-primary underline">privacy@droptix.co.uk</a>.
       </p>
 

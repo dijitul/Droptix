@@ -64,7 +64,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
         // fetch won't follow, so we check the opaque redirect status.
         if (signInRes.type === 'opaqueredirect' || signInRes.status === 302 || signInRes.ok) {
           setSubmitted(true);
-          router.push('/login/check-email');
+          router.push(`/login/check-email?email=${encodeURIComponent(email)}`);
         } else {
           const text = await signInRes.text().catch(() => '');
           throw new Error(text || `Sign-in failed (${signInRes.status}).`);

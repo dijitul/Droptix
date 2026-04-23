@@ -25,7 +25,9 @@ export default async function GenresPage() {
     },
   });
 
-  const active = cats.filter((c) => c._count.events > 0);
+  // Show every genre always — hub is a map, not a filter. Count goes
+  // to zero when nothing is on; users still get a crawlable route.
+  const all = cats;
 
   return (
     <main id="main" className="container py-12 sm:py-16">
@@ -33,17 +35,17 @@ export default async function GenresPage() {
         <Badge variant="tech" className="mb-4">Genres</Badge>
         <h1 className="text-display-lg uppercase">Browse by genre</h1>
         <p className="mt-4 text-lg text-on-surface-variant">
-          Find your sound. Every genre on Droptix with shows live right now.
+          Find your sound. Every genre on Droptix &mdash; click through for what&rsquo;s coming up.
         </p>
       </header>
 
-      {active.length === 0 ? (
+      {all.length === 0 ? (
         <div className="border-2 border-dashed border-outline-variant p-10 text-center">
-          <p className="text-muted-foreground">No genres have live events yet.</p>
+          <p className="text-muted-foreground">No genres configured yet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {active.map((c) => (
+          {all.map((c) => (
             <Link
               key={c.slug}
               href={`/genres/${c.slug}`}

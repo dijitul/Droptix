@@ -11,29 +11,71 @@ export const metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function CitiesPage() {
-  // Group events by city via venue. Count upcoming only.
-  const rows = await db.venue.findMany({
-    select: {
-      city: true,
+  // Prefer canonical City rows (have metadata, SEO copy, featured flag).
+  // Fall back to distinct venue.city strings so the hub is never empty
+  // during bootstrap before admin seeds cities.
+  const canonical = await db.city.findMany({
+    orderBy: [{ featured: 'desc' }, { name: 'asc' }],
+    include: {
       _count: {
         select: {
-          events: {
-            where: { status: 'ON_SALE', startsAt: { gte: new Date() }, publishedAt: { not: null } },
+          venues: {
+            where: {
+              events: {
+                some: {
+                  status: 'ON_SALE',
+                  startsAt: { gte: new Date() },
+                  publishedAt: { not: null },
+                },
+              },
+            },
           },
         },
       },
     },
   });
 
-  const cities = Array.from(
-    rows.reduce((acc, r) => {
-      if (!r.city) return acc;
-      acc.set(r.city, (acc.get(r.city) ?? 0) + r._count.events);
-      return acc;
-    }, new Map<string, number>()),
-  )
-    .filter(([, n]) => n > 0)
-    .sort(([, a], [, b]) => b - a);
+  const eventCounts = canonical.length
+    ? new Map(canonical.map((c) => [c.name, c._count.venues] as const))
+    : new Map<string, number>();
+
+  // Build display list. If admin has curated City rows, use those;
+  // otherwise derive from venues so launch is never "no cities shown".
+  let cities: Array<{ slug: string; name: string; country: string; count: number }>;
+  if (canonical.length) {
+    cities = canonical.map((c) => ({
+      slug: c.slug,
+      name: c.name,
+      country: c.country,
+      count: eventCounts.get(c.name) ?? 0,
+    }));
+  } else {
+    const rows = await db.venue.findMany({
+      select: {
+        city: true,
+        _count: {
+          select: {
+            events: {
+              where: { status: 'ON_SALE', startsAt: { gte: new Date() }, publishedAt: { not: null } },
+            },
+          },
+        },
+      },
+    });
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      if (!r.city) continue;
+      counts.set(r.city, (counts.get(r.city) ?? 0) + r._count.events);
+    }
+    cities = Array.from(counts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, count]) => ({
+        slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        name,
+        country: 'GB',
+        count,
+      }));
+  }
 
   return (
     <main id="main" className="container py-12 sm:py-16">
@@ -47,28 +89,35 @@ export default async function CitiesPage() {
 
       {cities.length === 0 ? (
         <div className="border-2 border-dashed border-outline-variant p-10 text-center">
-          <p className="text-muted-foreground">No city events live yet.</p>
+          <p className="text-muted-foreground">
+            No cities curated yet.{' '}
+            <Link href="/discover" className="text-primary underline">Browse all events</Link>
+            {' '}or{' '}
+            <Link href="/sell" className="text-primary underline">run one yourself</Link>.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cities.map(([city, count]) => (
+          {cities.map((c) => (
             <Link
-              key={city}
-              href={`/uk/${slugify(city)}`}
+              key={c.slug}
+              href={`/uk/${c.slug}`}
               className="group flex items-center justify-between border-2 border-outline-variant bg-surface-container p-5 transition-colors hover:border-primary hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <div>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-tertiary" aria-hidden="true" />
-                  <span className="label-tech text-tertiary">UK · {country(city)}</span>
+                  <span className="label-tech text-tertiary">UK · {regionFor(c.name)}</span>
                 </div>
                 <h2 className="mt-2 font-display text-2xl font-bold uppercase tracking-tight group-hover:text-primary">
-                  {city}
+                  {c.name}
                 </h2>
               </div>
               <div className="text-right">
-                <div className="font-display text-3xl font-bold text-primary">{count}</div>
-                <div className="label-tech text-muted-foreground">events</div>
+                <div className="font-display text-3xl font-bold text-primary">{c.count}</div>
+                <div className="label-tech text-muted-foreground">
+                  {c.count === 1 ? 'show' : 'shows'}
+                </div>
               </div>
             </Link>
           ))}
@@ -78,15 +127,7 @@ export default async function CitiesPage() {
   );
 }
 
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-function country(city: string): string {
-  // Rough England/Scotland/Wales tag — used on the city card. Keeps SEO copy warm.
+function regionFor(city: string): string {
   const scotland = ['Glasgow', 'Edinburgh', 'Dundee', 'Aberdeen'];
   const wales = ['Cardiff', 'Swansea', 'Newport'];
   const northern = ['Belfast', 'Derry', 'Londonderry'];

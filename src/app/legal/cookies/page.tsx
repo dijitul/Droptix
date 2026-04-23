@@ -8,13 +8,13 @@ export const metadata = {
 export default function CookiesPage() {
   return (
     <main id="main" className="container max-w-3xl py-12 sm:py-16">
-      <Badge variant="tech" className="mb-4">Legal · Draft</Badge>
+      <Badge variant="tech" className="mb-4">Legal</Badge>
       <h1 className="text-display-lg uppercase">Cookies</h1>
 
       <div className="prose prose-invert mt-10 max-w-none">
         <p>
-          Droptix uses only essential cookies. We don&rsquo;t run ad tech, don&rsquo;t share with
-          third-party trackers, and don&rsquo;t need a consent banner under PECR for the set below.
+          Droptix uses essential cookies only. No ad tech, no third-party trackers, no consent
+          banner needed under PECR for the set below.
         </p>
 
         <h2>Essential cookies</h2>

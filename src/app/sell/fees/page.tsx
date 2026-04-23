@@ -29,18 +29,18 @@ export default function FeesPage() {
 
           <Section heading="Volume tiers">
             <p>
-              Promoters processing over <strong className="text-primary">£50,000 GMV per quarter</strong>{' '}
-              automatically drop to <strong className="text-primary">3.5% + £0.40</strong>. No
-              negotiation, no paperwork, no &ldquo;contact sales&rdquo;. The admin applies the lower rule and it
-              takes effect next session.
+              Sell over <strong className="text-primary">£50,000 of tickets a quarter</strong> and
+              you automatically drop to <strong className="text-primary">3.5% + £0.40</strong>. No
+              forms, no negotiation, no &ldquo;contact sales&rdquo;. Takes effect from your next
+              session.
             </p>
           </Section>
 
           <Section heading="Stripe's slice">
             <p>
               Stripe&rsquo;s standard card fee applies on top of our platform fee:{' '}
-              <strong>1.5% + 20p</strong> for UK cards, 2.5% for international. That&rsquo;s taken by
-              Stripe directly from the charge — we don&rsquo;t touch it.
+              <strong>1.5% + £0.20</strong> on UK cards, 2.5% on international cards.
+              That&rsquo;s taken by Stripe directly from the charge &mdash; we don&rsquo;t touch it.
             </p>
           </Section>
 

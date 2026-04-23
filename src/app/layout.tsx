@@ -48,6 +48,46 @@ export const viewport: Viewport = {
   colorScheme: 'dark',
 };
 
+/** Site-wide structured data — Organization + WebSite. Placed at the root
+ *  so every page carries it; per-page JSON-LD (Event, BreadcrumbList etc)
+ *  layers on top. */
+const ORG_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Droptix',
+  url: 'https://droptix.co.uk',
+  logo: 'https://droptix.co.uk/icon-192.svg',
+  description:
+    "The UK's grassroots music ticket marketplace. Lower fees, faster payouts, built for independent promoters.",
+  sameAs: [],
+  areaServed: { '@type': 'Country', name: 'United Kingdom' },
+  contactPoint: [
+    {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: 'support@droptix.co.uk',
+      areaServed: 'GB',
+      availableLanguage: ['English'],
+    },
+  ],
+};
+
+const WEBSITE_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Droptix',
+  url: 'https://droptix.co.uk',
+  inLanguage: 'en-GB',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://droptix.co.uk/discover?q={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -63,6 +103,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to main content
         </a>
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_LD).replace(/</g, '\\u003c') }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_LD).replace(/</g, '\\u003c') }}
+        />
 
         <SiteHeader />
 

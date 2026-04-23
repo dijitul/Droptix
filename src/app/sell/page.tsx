@@ -89,7 +89,7 @@ export default function SellPage() {
             <Feature
               icon={Zap}
               title="Stripe Connect Express"
-              body="Onboard in 5 minutes. KYC handled by Stripe. Your money lands in your bank, not ours."
+              body="Link your bank in five minutes, no sales call. Stripe handles ID verification. Your money lands in your bank, not ours."
             />
             <Feature
               icon={PoundSterling}
