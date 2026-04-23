@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Search, ExternalLink } from 'lucide-react';
 import { requireAdmin } from '@/server/guards';
 import { db } from '@/server/db';
-import { adminSetEventStatus, adminDeleteEvent } from '@/server/admin';
+import { adminSetEventStatus, adminDeleteEvent, adminForceDeleteEvent } from '@/server/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,8 @@ export default async function AdminEventsPage({
 }: {
   searchParams: Promise<{ q?: string; status?: string }>;
 }) {
-  await requireAdmin();
+  const caller = await requireAdmin();
+  const canForce = caller.role === 'SUPERADMIN';
   const { q, status } = await searchParams;
 
   const events = await db.event.findMany({
@@ -194,6 +195,18 @@ export default async function AdminEventsPage({
                               aria-label={`Delete ${e.title}`}
                             >
                               Delete
+                            </Button>
+                          </form>
+                        ) : canForce ? (
+                          <form action={adminForceDeleteEvent.bind(null, e.id)}>
+                            <Button
+                              type="submit"
+                              size="sm"
+                              variant="destructive"
+                              aria-label={`Force delete ${e.title}`}
+                              title="Cascades through unpaid orders, test scans, and reservations. Refuses if any tickets are PAID."
+                            >
+                              Force delete
                             </Button>
                           </form>
                         ) : null}

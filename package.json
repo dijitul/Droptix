@@ -27,6 +27,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "admin:promote": "tsx scripts/promote-admin.ts",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
+    "admin:wipe-demo": "tsx scripts/wipe-demo-data.ts",
     "prepare": "husky"
   },
   "dependencies": {
