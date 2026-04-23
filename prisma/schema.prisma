@@ -128,7 +128,8 @@ enum FeeMode {
 
 enum IntegrationProvider {
   STRIPE
-  POSTMARK
+  MAILGUN                 // primary transactional email (EU region)
+  POSTMARK                // retained for back-compat; not surfaced in UI
   RESEND
   CLOUDFLARE_R2
   CLOUDFLARE_IMAGES
