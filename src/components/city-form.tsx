@@ -74,6 +74,7 @@ export function CityForm({
 
           <label
             htmlFor="c-featured"
+            aria-label="Feature on homepage"
             className="flex cursor-pointer items-start gap-3 border border-outline-variant p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
           >
             <input
