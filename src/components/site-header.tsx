@@ -1,13 +1,20 @@
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { DroptixMark } from './droptix-mark';
+import { UserMenu } from './user-menu';
+import { auth } from '@/server/auth';
 
 /**
  * Site-wide header — sticky on scroll, translucent ink panel with a
  * bottom hazard stripe. Primary nav is genre-led; the "On sale" CTA
  * is always on the right in primary-lime for thumb-reach on mobile.
+ *
+ * Signed-in users see their account menu instead of a "Sign in" link.
  */
-export function SiteHeader() {
+export async function SiteHeader() {
+  const session = await auth();
+  const isAuthed = Boolean(session?.user);
+
   return (
     <header className="sticky top-0 z-40 w-full border-b-2 border-primary/20 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container flex h-16 items-center justify-between gap-4">
@@ -28,12 +35,16 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/login"
-            className="hidden text-sm font-medium text-muted-foreground hover:text-foreground md:inline-block"
-          >
-            Sign in
-          </Link>
+          {isAuthed ? (
+            <UserMenu />
+          ) : (
+            <Link
+              href="/login"
+              className="hidden text-sm font-medium text-muted-foreground hover:text-foreground md:inline-block"
+            >
+              Sign in
+            </Link>
+          )}
           <Link
             href="/discover"
             className="inline-flex h-10 items-center border-2 border-primary bg-primary px-4 font-display text-sm font-bold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary-hover"
@@ -49,7 +60,6 @@ export function SiteHeader() {
           </button>
         </div>
       </div>
-      {/* Hazard stripe, industrial signature */}
       <div className="hazard-stripe" aria-hidden="true" />
     </header>
   );
