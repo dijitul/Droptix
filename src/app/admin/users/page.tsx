@@ -107,12 +107,12 @@ export default async function AdminUsersPage() {
                       {!isSelf && (
                         <div className="flex justify-end gap-2">
                           {u.role === 'ADMIN' && (
-                            <RoleForm userId={u.id} role="SUPERADMIN" label="Promote" />
+                            <RoleForm userId={u.id} newRole="SUPERADMIN" label="Promote" />
                           )}
                           {u.role === 'SUPERADMIN' && (
-                            <RoleForm userId={u.id} role="ADMIN" label="Demote" variant="outline" />
+                            <RoleForm userId={u.id} newRole="ADMIN" label="Demote" variant="outline" />
                           )}
-                          <RoleForm userId={u.id} role="BUYER" label="Revoke" variant="destructive" />
+                          <RoleForm userId={u.id} newRole="BUYER" label="Revoke" variant="destructive" />
                         </div>
                       )}
                     </Td>
@@ -145,17 +145,17 @@ function Td({ children, className, ...rest }: React.TdHTMLAttributes<HTMLTableCe
 
 function RoleForm({
   userId,
-  role,
+  newRole,
   label,
   variant = 'default',
 }: {
   userId: string;
-  role: UserRole;
+  newRole: UserRole;
   label: string;
   variant?: 'default' | 'outline' | 'destructive';
 }) {
   return (
-    <form action={setUserRole.bind(null, userId, role)}>
+    <form action={setUserRole.bind(null, userId, newRole)}>
       <Button type="submit" size="sm" variant={variant}>
         {label}
       </Button>
