@@ -15,11 +15,12 @@ import type { AgeRating, EventStatus } from '@prisma/client';
 
 async function assertOrganiserOwns(eventId: string) {
   const user = await requireOrganiser();
+  // Admins can act on any event; organisers only on their own.
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
   const event = await db.event.findFirst({
-    where: {
-      id: eventId,
-      organiser: { members: { some: { userId: user.id } } },
-    },
+    where: isAdmin
+      ? { id: eventId }
+      : { id: eventId, organiser: { members: { some: { userId: user.id } } } },
   });
   if (!event) throw new Error('Event not found or not yours.');
   return event;

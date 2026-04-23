@@ -125,6 +125,70 @@ export async function setUserRole(userId: string, role: UserRole): Promise<void>
   revalidatePath('/admin/users');
 }
 
+// ── Events (admin-level) ───────────────────────────────────────────────
+export async function adminSetEventStatus(
+  eventId: string,
+  status: 'DRAFT' | 'SCHEDULED' | 'ON_SALE' | 'SOLD_OUT' | 'POSTPONED' | 'RESCHEDULED' | 'CANCELLED' | 'COMPLETED',
+): Promise<void> {
+  const admin = await requireAdmin();
+  const before = await db.event.findUnique({
+    where: { id: eventId },
+    select: { status: true, title: true, publishedAt: true },
+  });
+  if (!before) throw new Error('Event not found.');
+
+  await db.event.update({
+    where: { id: eventId },
+    data: {
+      status,
+      // Draft or Cancelled = hidden from public; everything else visible.
+      publishedAt: status === 'DRAFT' ? null : before.publishedAt ?? new Date(),
+    },
+  });
+
+  await audit({
+    adminId: admin.id,
+    action: 'event.status',
+    subject: `event:${eventId}`,
+    before,
+    after: { status },
+  });
+  revalidatePath('/admin/events');
+  revalidatePath('/discover');
+}
+
+export async function adminDeleteEvent(eventId: string): Promise<void> {
+  const admin = await requireAdmin();
+
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    include: {
+      _count: { select: { orders: { where: { status: 'PAID' } }, tickets: true } },
+      ticketTypes: { select: { soldCount: true } },
+    },
+  });
+  if (!event) throw new Error('Event not found.');
+
+  const totalSold = event.ticketTypes.reduce((s, t) => s + t.soldCount, 0);
+  if (event._count.orders > 0 || event._count.tickets > 0 || totalSold > 0) {
+    throw new Error(
+      `Can't hard-delete — this event has ${totalSold} tickets sold. Cancel it instead to trigger refunds.`,
+    );
+  }
+
+  // Delete cascades via Prisma relations onto ticket_types, event_categories,
+  // event_images, etc. No orphan rows left behind.
+  await db.event.delete({ where: { id: eventId } });
+
+  await audit({
+    adminId: admin.id,
+    action: 'event.delete',
+    subject: `event:${eventId}`,
+    before: { title: event.title, slug: event.slug },
+  });
+  revalidatePath('/admin/events');
+}
+
 export async function inviteAdmin(formData: FormData): Promise<void> {
   const admin = await requireSuperAdmin();
   const email = String(formData.get('email') ?? '').trim().toLowerCase();

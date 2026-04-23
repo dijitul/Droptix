@@ -21,8 +21,11 @@ export default async function AttendeesPage({
   const { id } = await params;
   const { q } = await searchParams;
 
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
   const event = await db.event.findFirst({
-    where: { id, organiser: { members: { some: { userId: user.id } } } },
+    where: isAdmin
+      ? { id }
+      : { id, organiser: { members: { some: { userId: user.id } } } },
     select: {
       id: true,
       title: true,

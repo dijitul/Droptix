@@ -20,8 +20,12 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   const user = await requireOrganiser();
   const { id } = await params;
 
+  // Admins can edit any event; organiser-members only their own.
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
   const event = await db.event.findFirst({
-    where: { id, organiser: { members: { some: { userId: user.id } } } },
+    where: isAdmin
+      ? { id }
+      : { id, organiser: { members: { some: { userId: user.id } } } },
     include: {
       ticketTypes: { orderBy: { position: 'asc' } },
       heroImage: true,
