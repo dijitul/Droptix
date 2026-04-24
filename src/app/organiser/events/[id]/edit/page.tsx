@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Money } from '@/lib/money';
 import { HeroUploader } from './HeroUploader';
 import type { Currency } from '@prisma/client';
+import { ServerActionForm } from '@/components/server-action-form';
 
 export const metadata = { title: 'Edit event' };
 export const dynamic = 'force-dynamic';
@@ -67,7 +68,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <form action={updateEvent.bind(null, event.id)} className="flex flex-col gap-5">
+        <ServerActionForm
+          action={updateEvent.bind(null, event.id)}
+          className="flex flex-col gap-5"
+          successMessage="Saved"
+        >
           <Section title="Event details">
             <div>
               <Label htmlFor="title">Title</Label>
@@ -153,7 +158,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
           <Button type="submit" size="lg">
             Save changes
           </Button>
-        </form>
+        </ServerActionForm>
 
         <div className="flex flex-col gap-5">
           <Section title="Hero artwork">
@@ -190,7 +195,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
               </ul>
             )}
 
-            <form action={addTicketType.bind(null, event.id)} className="mt-4 grid grid-cols-3 gap-2 border-t border-outline-variant pt-4">
+            <ServerActionForm
+              action={addTicketType.bind(null, event.id)}
+              className="mt-4 grid grid-cols-3 gap-2 border-t border-outline-variant pt-4"
+              successMessage="Ticket type added"
+            >
               <div className="col-span-3 sm:col-span-1">
                 <Label htmlFor="tt-name">Name</Label>
                 <Input id="tt-name" name="name" required placeholder="Early bird" />
@@ -208,7 +217,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
                   <Plus className="h-4 w-4" aria-hidden="true" /> Add ticket type
                 </Button>
               </div>
-            </form>
+            </ServerActionForm>
           </Section>
         </div>
       </div>

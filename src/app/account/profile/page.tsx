@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ServerActionForm } from '@/components/server-action-form';
 
 export const metadata = { title: 'Profile' };
 export const dynamic = 'force-dynamic';
@@ -49,7 +50,11 @@ export default async function ProfilePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={updateProfile} className="flex flex-col gap-4">
+          <ServerActionForm
+            action={updateProfile}
+            className="flex flex-col gap-4"
+            successMessage="Profile updated"
+          >
             <div>
               <Label htmlFor="name">Name</Label>
               <Input
@@ -63,7 +68,7 @@ export default async function ProfilePage() {
               />
             </div>
             <Button type="submit" className="self-start">Save</Button>
-          </form>
+          </ServerActionForm>
         </CardContent>
       </Card>
 

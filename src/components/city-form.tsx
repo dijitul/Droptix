@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ServerActionForm } from '@/components/server-action-form';
 
 type CityDefaults = {
   name?: string | null;
@@ -21,7 +22,7 @@ export function CityForm({
   submitLabel?: string;
 }) {
   return (
-    <form action={action} className="flex flex-col gap-5" noValidate>
+    <ServerActionForm action={action} className="flex flex-col gap-5" noValidate>
       <section className="border-2 border-outline-variant bg-surface-container p-5">
         <h2 className="mb-4 font-display text-lg font-bold uppercase tracking-tight">City</h2>
         <div className="flex flex-col gap-4">
@@ -97,6 +98,6 @@ export function CityForm({
       <Button type="submit" size="lg" className="self-start">
         {submitLabel}
       </Button>
-    </form>
+    </ServerActionForm>
   );
 }

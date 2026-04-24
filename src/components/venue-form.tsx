@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ServerActionForm } from '@/components/server-action-form';
 
 /**
  * Shared venue form — used by both the admin create/edit pages and the
@@ -32,7 +33,7 @@ export function VenueForm({
   submitLabel?: string;
 }) {
   return (
-    <form action={action} className="flex flex-col gap-5" noValidate>
+    <ServerActionForm action={action} className="flex flex-col gap-5" noValidate>
       {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
 
       <Section title="The basics">
@@ -160,7 +161,7 @@ export function VenueForm({
       <Button type="submit" size="lg" className="self-start">
         {submitLabel}
       </Button>
-    </form>
+    </ServerActionForm>
   );
 }
 

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatEventDate } from '@/lib/format';
 import type { UserRole } from '@prisma/client';
+import { ServerActionForm } from '@/components/server-action-form';
 
 export const metadata = { title: 'Users' };
 export const dynamic = 'force-dynamic';
@@ -42,7 +43,11 @@ export default async function AdminUsersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={inviteAdmin} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <ServerActionForm
+            action={inviteAdmin}
+            className="flex flex-col gap-3 sm:flex-row sm:items-end"
+            successMessage="Invite sent"
+          >
             <div className="flex-1">
               <Label htmlFor="invite-email">Email address</Label>
               <Input
@@ -67,7 +72,7 @@ export default async function AdminUsersPage() {
               </select>
             </div>
             <Button type="submit">Invite</Button>
-          </form>
+          </ServerActionForm>
           <p className="mt-3 text-xs text-muted-foreground">
             If email delivery isn&rsquo;t set up yet, run{' '}
             <code className="font-mono">pnpm admin:bootstrap &lt;email&gt;</code> on the

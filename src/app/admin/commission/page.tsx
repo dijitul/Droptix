@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ServerActionForm } from '@/components/server-action-form';
 
 export const metadata = { title: 'Commission rules' };
 export const dynamic = 'force-dynamic';
@@ -114,7 +115,11 @@ function RuleCard({
       </CardHeader>
 
       <CardContent>
-        <form action={upsertCommissionRule} className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <ServerActionForm
+          action={upsertCommissionRule}
+          className="grid grid-cols-2 gap-4 md:grid-cols-4"
+          successMessage="Rule saved"
+        >
           {organiserId && <input type="hidden" name="organiserId" value={organiserId} />}
 
           <div>
@@ -183,7 +188,7 @@ function RuleCard({
           <div className="col-span-2 md:col-span-4">
             <Button type="submit">{rule ? 'Save new version' : 'Create rule'}</Button>
           </div>
-        </form>
+        </ServerActionForm>
       </CardContent>
     </Card>
   );

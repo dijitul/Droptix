@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { db } from '@/server/db';
 import { redirect } from 'next/navigation';
+import { ServerActionForm } from '@/components/server-action-form';
 
 export const metadata = { title: 'Start selling' };
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,7 @@ export default async function StartSellingPage() {
         identity and connect your payout account. Takes about 5 minutes end-to-end.
       </p>
 
-      <form action={createOrganiserAndStartOnboarding} className="mt-10 flex flex-col gap-5" noValidate>
+      <ServerActionForm action={createOrganiserAndStartOnboarding} className="mt-10 flex flex-col gap-5" noValidate>
         <div className="flex flex-col gap-2">
           <Label htmlFor="name">Promoter name</Label>
           <Input
@@ -94,7 +95,7 @@ export default async function StartSellingPage() {
           </Link>
           . You&rsquo;ll keep full ownership of your events, brand, and customer data.
         </p>
-      </form>
+      </ServerActionForm>
     </main>
   );
 }

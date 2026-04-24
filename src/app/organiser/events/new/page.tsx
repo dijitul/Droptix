@@ -162,7 +162,7 @@ export default async function NewEventPage({
             without at least one ticket type.
           </p>
         </aside>
-      </form>
+      </ServerActionForm>
     </div>
   );
 }
