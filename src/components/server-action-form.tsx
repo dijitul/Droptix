@@ -4,10 +4,11 @@ import { useTransition, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-// Server actions can type as () => Promise<void> OR () => void | Promise<void>
-// depending on how they're declared. Accept the lenient shape so the
-// wrapper is a drop-in replacement for every <form action={...}>.
-type ServerAction = (formData: FormData) => void | Promise<unknown | void>;
+// Server actions can type as () => Promise<void> OR () => void | Promise<void>.
+// Matches the shape Next's HTMLFormElement['action'] accepts — return Promise<void>
+// so redirect()-throws and normal completion both fit, and at runtime we accept
+// anything the action returns (or doesn't).
+type ServerAction = (formData: FormData) => void | Promise<void>;
 
 /**
  * Drop-in client wrapper for any <form> that fires a server action.
