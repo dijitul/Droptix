@@ -43,10 +43,6 @@ export async function createEvent(formData: FormData): Promise<void> {
   });
   const org = membership.organiser;
 
-  if (!org.stripeChargesEnabled) {
-    throw new Error('Finish Stripe onboarding before publishing events.');
-  }
-
   const title = String(formData.get('title') ?? '').trim();
   const subtitle = String(formData.get('subtitle') ?? '').trim() || null;
   const description = String(formData.get('description') ?? '').trim();
@@ -59,9 +55,19 @@ export async function createEvent(formData: FormData): Promise<void> {
   const categorySlugsRaw = formData.getAll('categories');
   const categorySlugs = categorySlugsRaw.map(String).filter(Boolean);
 
-  if (title.length < 3) throw new Error('Event needs a title.');
-  if (description.length < 10) throw new Error('Add a description — even short.');
-  if (!startsAtInput || !endsAtInput) throw new Error('Start + end times required.');
+  // Stripe is only required to PUBLISH. DRAFT events don't need payment
+  // infrastructure — organisers should be able to prep events while Stripe
+  // onboarding is still processing.
+  if (status !== 'DRAFT' && !org.stripeChargesEnabled) {
+    throw new Error(
+      "Save as Draft for now — Stripe onboarding needs to finish before this event can go on sale. It's in your dashboard.",
+    );
+  }
+
+  if (title.length < 3) throw new Error('Event needs a title — at least 3 characters.');
+  if (description.length < 10)
+    throw new Error('Add a description of at least 10 characters — a rough line is fine, you can polish later.');
+  if (!startsAtInput || !endsAtInput) throw new Error('Both start and end times are required.');
 
   const startsAt = new Date(startsAtInput);
   const endsAt = new Date(endsAtInput);
