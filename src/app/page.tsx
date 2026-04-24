@@ -46,7 +46,7 @@ export default async function HomePage() {
           </p>
           <p className="mt-6 max-w-prose text-lg text-on-surface-variant">
             Independent UK gigs, club nights and festivals. Fairer fees, faster payouts, and
-            tickets built by people who still go to shows.
+            tickets built by people who still go to events.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
@@ -55,7 +55,7 @@ export default async function HomePage() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/sell">Put a show on sale</Link>
+              <Link href="/sell">Put an event on sale</Link>
             </Button>
           </div>
 

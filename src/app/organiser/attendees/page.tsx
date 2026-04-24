@@ -48,7 +48,7 @@ export default async function OrganiserAttendeesPage({
         <h1 className="text-display-md uppercase">Attendees</h1>
         <p className="mt-3 text-on-surface-variant max-w-prose">
           Pick an event to see its door list, search tickets, or export the full CSV. Search names
-          across the whole catalogue from here if you can&rsquo;t remember which show they&rsquo;re on.
+          across the whole catalogue from here if you can&rsquo;t remember which event they&rsquo;re on.
         </p>
       </header>
 

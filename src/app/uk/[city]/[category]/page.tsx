@@ -91,7 +91,7 @@ export default async function CityCategoryPage({ params }: { params: Promise<Par
             {category.name}<br />in {cityName}
           </h1>
           <p className="max-w-prose text-lg text-on-surface-variant">
-            {events.length} upcoming {category.name.toLowerCase()} {events.length === 1 ? 'show' : 'shows'} in {cityName}.
+            {events.length} upcoming {category.name.toLowerCase()} {events.length === 1 ? 'event' : 'events'} in {cityName}.
           </p>
         </header>
 

@@ -105,7 +105,7 @@ export default async function CityHub({ params }: { params: Promise<Params> }) {
             Music events in<br />{cityName}
           </h1>
           <p className="max-w-prose text-lg text-on-surface-variant">
-            {events.length} upcoming {events.length === 1 ? 'show' : 'shows'} across{' '}
+            {events.length} upcoming {events.length === 1 ? 'event' : 'events'} across{' '}
             {genreMap.size} {genreMap.size === 1 ? 'genre' : 'genres'}. Tickets for gigs, club nights,
             and festivals in {cityName} — direct from independent promoters.
           </p>

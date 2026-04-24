@@ -27,7 +27,7 @@ export default function SellPage() {
             For promoters · UK
           </Badge>
           <h1 className="text-display-xl uppercase max-w-[18ch]">
-            Your show,<br />not our margin.
+            Your event,<br />not our margin.
           </h1>
           <p className="mt-6 max-w-prose text-lg text-on-surface-variant">
             Droptix is a ticketing platform built for independent UK music promoters. Lower fees,
@@ -133,7 +133,7 @@ export default function SellPage() {
           />
           <div className="label-tech mb-3 text-tertiary">Ready?</div>
           <h2 className="text-display-lg uppercase max-w-[16ch]">
-            Put your next show<br />on sale tonight.
+            Put your next event<br />on sale tonight.
           </h2>
           <p className="mt-5 max-w-prose text-lg text-on-surface-variant">
             You&rsquo;ll be live in 10 minutes. Stripe handles your payouts. We handle everything else.

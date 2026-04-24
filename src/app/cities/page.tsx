@@ -116,7 +116,7 @@ export default async function CitiesPage() {
               <div className="text-right">
                 <div className="font-display text-3xl font-bold text-primary">{c.count}</div>
                 <div className="label-tech text-muted-foreground">
-                  {c.count === 1 ? 'show' : 'shows'}
+                  {c.count === 1 ? 'event' : 'events'}
                 </div>
               </div>
             </Link>

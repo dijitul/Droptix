@@ -34,7 +34,7 @@ export default async function NewEventPage({
 
       <header>
         <Badge variant="tech" className="mb-3">Create event</Badge>
-        <h1 className="text-display-md uppercase">Tell us about the show.</h1>
+        <h1 className="text-display-md uppercase">Tell us about the event.</h1>
         <p className="mt-3 text-on-surface-variant max-w-prose">
           Draft first, polish after. You can edit everything &mdash; title, dates, artwork, ticket
           types &mdash; right up until sales open.

@@ -105,7 +105,7 @@ export default async function OrganiserPublicPage({ params }: { params: Promise<
         {upcoming.length > 0 && (
           <section className="mb-12">
             <h2 className="mb-4 font-display text-2xl font-bold uppercase tracking-tight">
-              Upcoming shows
+              Upcoming events
             </h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {upcoming.map((e) => {
@@ -133,7 +133,7 @@ export default async function OrganiserPublicPage({ params }: { params: Promise<
         {past.length > 0 && (
           <section>
             <h2 className="mb-4 font-display text-2xl font-bold uppercase tracking-tight text-muted-foreground">
-              Past shows
+              Past events
             </h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 opacity-70">
               {past.slice(0, 8).map((e) => {

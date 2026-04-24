@@ -87,7 +87,7 @@ export default async function GenrePage({ params }: { params: Promise<Params> })
           <Badge variant="tech" className="w-fit">{cat.name}</Badge>
           <h1 className="text-display-xl uppercase">{cat.name}</h1>
           <p className="max-w-prose text-lg text-on-surface-variant">
-            {events.length} upcoming {cat.name.toLowerCase()} {events.length === 1 ? 'show' : 'shows'} across the UK.
+            {events.length} upcoming {cat.name.toLowerCase()} {events.length === 1 ? 'event' : 'events'} across the UK.
           </p>
 
           {cities.length > 0 && (

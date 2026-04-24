@@ -124,7 +124,7 @@ export default async function VenuePublicPage({ params }: { params: Promise<Para
 
         {venue.events.length === 0 ? (
           <div className="border-2 border-dashed border-outline-variant p-10 text-center text-muted-foreground">
-            No upcoming shows at {venue.name}.
+            No upcoming events at {venue.name}.
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

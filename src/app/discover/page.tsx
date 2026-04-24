@@ -44,13 +44,13 @@ export default async function DiscoverPage() {
       {events.length === 0 ? (
         <div className="border-2 border-dashed border-outline-variant p-10 text-center">
           <p className="text-muted-foreground">
-            No shows live yet. New events are being added every week &mdash;{' '}
+            No events live yet. New events are being added every week &mdash;{' '}
             <Link className="text-primary underline" href="/cities">browse by city</Link>
             {' '}or{' '}
             <Link className="text-primary underline" href="/genres">by genre</Link>.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Run a show?{' '}
+            Run an event?{' '}
             <Link className="label-tech text-primary underline" href="/sell">
               Put one on sale
             </Link>
