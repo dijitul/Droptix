@@ -45,17 +45,22 @@ export async function isR2Configured(): Promise<boolean> {
 
 async function localSave(key: string, data: Buffer): Promise<void> {
   const dest = path.join(LOCAL_ROOT, key);
+  console.log(`[storage.localSave] writing ${data.length}b → ${dest}`);
   await fs.mkdir(path.dirname(dest), { recursive: true });
   await fs.writeFile(dest, data);
+  console.log(`[storage.localSave] ✓ written ${dest}`);
 }
 
 async function localRead(key: string): Promise<Buffer | null> {
   const src = path.join(LOCAL_ROOT, key);
-  // Prevent directory-traversal attacks via crafted keys
-  if (!src.startsWith(LOCAL_ROOT)) return null;
+  if (!src.startsWith(LOCAL_ROOT)) {
+    console.warn(`[storage.localRead] refused — path traversal? key=${key}`);
+    return null;
+  }
   try {
     return await fs.readFile(src);
-  } catch {
+  } catch (err) {
+    console.warn(`[storage.localRead] miss ${src} (${err instanceof Error ? err.message : 'unknown'})`);
     return null;
   }
 }

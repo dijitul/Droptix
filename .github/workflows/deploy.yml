@@ -40,7 +40,11 @@ jobs:
             # Reload the Node process managed by PM2 (installed per CyberPanel
             # Node.js app convention). Fall back to passenger restart if PM2 isn't present.
             if command -v pm2 >/dev/null 2>&1; then
+              # Reload both web + worker. `reload ecosystem.config.cjs`
+              # catches all apps declared in the file. Without --update-env
+              # the worker holds stale env + stale compiled code.
               pm2 reload ecosystem.config.cjs --update-env
+              pm2 save
             else
               touch tmp/restart.txt
             fi

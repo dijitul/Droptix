@@ -1,5 +1,8 @@
 'use client';
 
+// Version: v3 — bumped to force Cloudflare/browser cache invalidation
+// after the createPortal fix. Earlier v2 was stuck in caches.
+
 import { useState, useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';

@@ -131,6 +131,11 @@ export async function createImageUploadUrl(params: {
     if (info.expires < Date.now()) LOCAL_UPLOAD_TOKENS.delete(t);
   }
 
+  console.log(
+    `[upload.mint] token=${uploadToken.slice(0, 8)}… imageId=${image.id} key=${key} ` +
+      `mapSize=${LOCAL_UPLOAD_TOKENS.size}`,
+  );
+
   return {
     mode: 'local',
     uploadPath: target.uploadPath,
@@ -144,9 +149,14 @@ export async function createImageUploadUrl(params: {
 /** Called from the /api/uploads/image route to swap token → imageId + validate. */
 export async function consumeUploadToken(token: string): Promise<string | null> {
   const record = LOCAL_UPLOAD_TOKENS.get(token);
+  console.log(
+    `[upload.consume] token=${token.slice(0, 8)}… ` +
+      `found=${Boolean(record)} mapSize=${LOCAL_UPLOAD_TOKENS.size}`,
+  );
   if (!record) return null;
   if (record.expires < Date.now()) {
     LOCAL_UPLOAD_TOKENS.delete(token);
+    console.warn(`[upload.consume] expired token=${token.slice(0, 8)}…`);
     return null;
   }
   LOCAL_UPLOAD_TOKENS.delete(token);
