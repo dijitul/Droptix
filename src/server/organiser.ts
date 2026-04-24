@@ -137,13 +137,37 @@ export async function createConnectAccountLink(organiserId: string): Promise<str
   return link.url;
 }
 
-/** After Stripe redirects back — sync account status onto the organiser row. */
+/**
+ * After Stripe redirects back — sync account status onto the organiser row.
+ *
+ * Pure data-sync: does NOT call revalidatePath. Next.js 15 forbids
+ * revalidatePath during page render, and this function is invoked from
+ * `/organiser/onboarding/return/page.tsx` during render. The return
+ * page reads fresh data from the DB after calling this, so cache
+ * invalidation isn't required — the next visit to /organiser re-reads
+ * the row anyway (dynamic: 'force-dynamic').
+ */
 export async function syncConnectAccountStatus(organiserId: string): Promise<void> {
   const organiser = await db.organiser.findUnique({ where: { id: organiserId } });
   if (!organiser?.stripeAccountId) return;
 
-  const stripe = await getStripe();
-  const account = await stripe.accounts.retrieve(organiser.stripeAccountId);
+  let stripe;
+  try {
+    stripe = await getStripe();
+  } catch {
+    // If Stripe keys are missing/misconfigured we can't sync — skip.
+    // The return page will still render the org's last-known state.
+    return;
+  }
+
+  let account: Awaited<ReturnType<typeof stripe.accounts.retrieve>>;
+  try {
+    account = await stripe.accounts.retrieve(organiser.stripeAccountId);
+  } catch {
+    // Stripe API glitch — don't throw from a page render. The periodic
+    // account.updated webhook will reconcile shortly anyway.
+    return;
+  }
 
   await db.organiser.update({
     where: { id: organiser.id },
@@ -156,6 +180,5 @@ export async function syncConnectAccountStatus(organiserId: string): Promise<voi
         account.charges_enabled && organiser.status === 'PENDING' ? 'ACTIVE' : organiser.status,
     },
   });
-
-  revalidatePath('/organiser');
+  // Intentionally no revalidatePath — see docstring.
 }
