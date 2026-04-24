@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { ServerActionForm } from '@/components/server-action-form';
 
 export const metadata = { title: 'New event' };
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,7 @@ export default async function NewEventPage({
         </p>
       </header>
 
-      <form action={createEvent} className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <ServerActionForm action={createEvent} className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-5">
           <Section title="The basics">
             <div>
