@@ -1,7 +1,6 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 import { db } from './db';
 import { getStripe } from './stripe';
 import { requireUser } from './guards';
