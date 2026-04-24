@@ -4,7 +4,10 @@ import { useTransition, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-type ServerAction = (formData: FormData) => Promise<unknown | void>;
+// Server actions can type as () => Promise<void> OR () => void | Promise<void>
+// depending on how they're declared. Accept the lenient shape so the
+// wrapper is a drop-in replacement for every <form action={...}>.
+type ServerAction = (formData: FormData) => void | Promise<unknown | void>;
 
 /**
  * Drop-in client wrapper for any <form> that fires a server action.
