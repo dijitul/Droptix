@@ -37,6 +37,14 @@ jobs:
             pnpm db:generate
             pnpm db:migrate:deploy
             pnpm build
+            # Next.js `output: "standalone"` writes a self-contained server to
+            # .next/standalone/server.js but does NOT copy the static asset
+            # bundle (.next/static/**) or /public into it. PM2 runs the
+            # standalone server, so without this step every CSS + JS chunk
+            # 404s and the live site renders unstyled. This bit us once —
+            # never again.
+            cp -r .next/static .next/standalone/.next/
+            cp -r public .next/standalone/
             # Reload the Node process managed by PM2 (installed per CyberPanel
             # Node.js app convention). Fall back to passenger restart if PM2 isn't present.
             if command -v pm2 >/dev/null 2>&1; then
