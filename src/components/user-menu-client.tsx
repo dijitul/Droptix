@@ -27,7 +27,7 @@ export function UserMenuClient({
 
   useEffect(() => {
     if (!open) return;
-    function onClick(e: MouseEvent) {
+    function onClick(e: Event) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
