@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Calendar, BarChart3, Users, Settings, Ticket, PoundSterling } from 'lucide-react';
+import { Calendar, BarChart3, Users, Settings, Ticket, PoundSterling, ShieldCheck } from 'lucide-react';
 import { requireUser } from '@/server/guards';
 import { db } from '@/server/db';
 import { DroptixMark } from '@/components/droptix-mark';
@@ -10,6 +10,7 @@ export const metadata = { title: 'Organiser' };
 
 export default async function OrganiserLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
 
   // Resolve the current organiser scope (first membership — multi-org UI comes later)
   const membership = await db.organiserMember.findFirst({
@@ -18,17 +19,23 @@ export default async function OrganiserLayout({ children }: { children: React.Re
     orderBy: { createdAt: 'asc' },
   });
 
-  if (!membership) redirect('/sell/start');
-  const org = membership.organiser;
+  // Admins are allowed through without an organiser membership — they
+  // need to be able to view/edit any event from /admin/events without
+  // being shoved into the /sell/start signup wizard. Non-admins still
+  // get bounced to onboarding.
+  if (!membership && !isAdmin) redirect('/sell/start');
 
-  const statusBadge =
-    org.status === 'ACTIVE'
+  const org = membership?.organiser ?? null;
+
+  const statusBadge = org
+    ? org.status === 'ACTIVE'
       ? { label: 'Live', variant: 'success' as const }
       : org.status === 'PENDING'
       ? { label: 'Pending', variant: 'hazard' as const }
       : org.status === 'SUSPENDED'
       ? { label: 'Suspended', variant: 'destructive' as const }
-      : { label: 'Closed', variant: 'outline' as const };
+      : { label: 'Closed', variant: 'outline' as const }
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-dim md:flex-row">
@@ -45,13 +52,31 @@ export default async function OrganiserLayout({ children }: { children: React.Re
         </Link>
 
         <div className="mb-3 px-2">
-          <div className="label-tech text-tertiary mb-1">Organiser</div>
-          <div className="flex items-center gap-2">
-            <span className="truncate font-display text-base font-bold">{org.name}</span>
-            <Badge variant={statusBadge.variant} className="shrink-0">
-              {statusBadge.label}
-            </Badge>
-          </div>
+          {org && statusBadge ? (
+            <>
+              <div className="label-tech text-tertiary mb-1">Organiser</div>
+              <div className="flex items-center gap-2">
+                <span className="truncate font-display text-base font-bold">{org.name}</span>
+                <Badge variant={statusBadge.variant} className="shrink-0">
+                  {statusBadge.label}
+                </Badge>
+              </div>
+            </>
+          ) : (
+            // Admin-without-membership view. Surfaced with hazard-tone
+            // pill so the admin always knows they're in cross-tenant
+            // mode, not running their own org.
+            <>
+              <div className="label-tech text-tertiary mb-1">Mode</div>
+              <div className="flex items-center gap-2">
+                <span className="truncate font-display text-base font-bold">Admin view</span>
+                <Badge variant="hazard" className="shrink-0">
+                  <ShieldCheck className="mr-1 h-3 w-3" aria-hidden="true" />
+                  All orgs
+                </Badge>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="border-t border-outline-variant pt-2">
@@ -65,9 +90,15 @@ export default async function OrganiserLayout({ children }: { children: React.Re
 
         <div className="mt-auto border-t border-outline-variant px-2 py-3 text-xs text-muted-foreground">
           <div className="truncate">{user.email}</div>
-          <Link href="/" className="label-tech text-muted-foreground hover:text-primary">
-            ← Back to site
-          </Link>
+          {isAdmin ? (
+            <Link href="/admin" className="label-tech text-muted-foreground hover:text-primary">
+              ← Back to admin
+            </Link>
+          ) : (
+            <Link href="/" className="label-tech text-muted-foreground hover:text-primary">
+              ← Back to site
+            </Link>
+          )}
         </div>
       </aside>
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { requireOrganiser } from '@/server/guards';
 import { db } from '@/server/db';
@@ -13,10 +14,20 @@ export const dynamic = 'force-dynamic';
 
 export default async function OrganiserEventsPage() {
   const user = await requireOrganiser();
-  const membership = await db.organiserMember.findFirstOrThrow({
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
+
+  // findFirst not findFirstOrThrow — admin users may have no
+  // membership but still need /organiser/events/[id]/* to work as
+  // deep links. The events list itself doesn't make sense without
+  // an org context, so we bounce admin-without-org to /admin/events.
+  const membership = await db.organiserMember.findFirst({
     where: { userId: user.id },
     select: { organiserId: true },
   });
+  if (!membership) {
+    if (isAdmin) redirect('/admin/events');
+    redirect('/sell/start');
+  }
 
   const events = await db.event.findMany({
     where: { organiserId: membership.organiserId },

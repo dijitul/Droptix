@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArrowRight, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { requireUser } from '@/server/guards';
 import { db } from '@/server/db';
@@ -11,10 +12,21 @@ export const dynamic = 'force-dynamic';
 
 export default async function OrganiserDashboard() {
   const user = await requireUser();
-  const membership = await db.organiserMember.findFirstOrThrow({
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
+
+  // Resolve membership with findFirst (NOT findFirstOrThrow) — admins
+  // are allowed in /organiser/* without a membership for cross-tenant
+  // edit/attendees deep-links from /admin/events. The dashboard itself
+  // doesn't make sense without an org context, so admin-without-org
+  // gets bounced to /admin where they actually belong.
+  const membership = await db.organiserMember.findFirst({
     where: { userId: user.id },
     include: { organiser: true },
   });
+  if (!membership) {
+    if (isAdmin) redirect('/admin');
+    redirect('/sell/start');
+  }
   const orgId = membership.organiserId;
   const org = membership.organiser;
 

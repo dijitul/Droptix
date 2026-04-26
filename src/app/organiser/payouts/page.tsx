@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { requireOrganiser } from '@/server/guards';
 import { db } from '@/server/db';
 import { Badge } from '@/components/ui/badge';
@@ -12,10 +13,15 @@ export const dynamic = 'force-dynamic';
 
 export default async function PayoutsPage() {
   const user = await requireOrganiser();
-  const membership = await db.organiserMember.findFirstOrThrow({
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
+  const membership = await db.organiserMember.findFirst({
     where: { userId: user.id },
     include: { organiser: true },
   });
+  if (!membership) {
+    if (isAdmin) redirect('/admin/payouts');
+    redirect('/sell/start');
+  }
   const org = membership.organiser;
 
   const payouts = await db.payout.findMany({

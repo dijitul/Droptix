@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArrowRight, QrCode } from 'lucide-react';
 import { requireOrganiser } from '@/server/guards';
 import { db } from '@/server/db';
@@ -10,10 +11,15 @@ export const dynamic = 'force-dynamic';
 
 export default async function ScannerIndexPage() {
   const user = await requireOrganiser();
-  const membership = await db.organiserMember.findFirstOrThrow({
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
+  const membership = await db.organiserMember.findFirst({
     where: { userId: user.id },
     select: { organiserId: true },
   });
+  if (!membership) {
+    if (isAdmin) redirect('/admin');
+    redirect('/sell/start');
+  }
 
   // Show the next 10 events — door crew scan these.
   const events = await db.event.findMany({

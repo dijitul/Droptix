@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { requireUser } from '@/server/guards';
 import { db } from '@/server/db';
 import { Badge } from '@/components/ui/badge';
@@ -10,12 +11,16 @@ export const dynamic = 'force-dynamic';
 
 export default async function OrganiserSettingsPage() {
   const user = await requireUser();
-  const org = (
-    await db.organiserMember.findFirstOrThrow({
-      where: { userId: user.id },
-      include: { organiser: true },
-    })
-  ).organiser;
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
+  const membership = await db.organiserMember.findFirst({
+    where: { userId: user.id },
+    include: { organiser: true },
+  });
+  if (!membership) {
+    if (isAdmin) redirect('/admin/organisers');
+    redirect('/sell/start');
+  }
+  const org = membership.organiser;
 
   const rule =
     (await db.commissionRule.findFirst({

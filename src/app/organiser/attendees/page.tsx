@@ -17,15 +17,16 @@ export default async function OrganiserAttendeesPage({
 }) {
   const user = await requireOrganiser();
   const { q } = await searchParams;
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
 
-  const membership = await db.organiserMember.findFirstOrThrow({
+  // findFirst not OrThrow — admin without membership is allowed.
+  const membership = await db.organiserMember.findFirst({
     where: { userId: user.id },
     select: { organiserId: true },
   });
-  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
 
   // Aggregate across every event the caller owns (or every event if admin).
-  const eventWhere = isAdmin ? {} : { organiserId: membership.organiserId };
+  const eventWhere = isAdmin ? {} : { organiserId: membership?.organiserId ?? '__none__' };
 
   const events = await db.event.findMany({
     where: {
