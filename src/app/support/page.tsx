@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'Support',
   description: 'Get help with your Droptix tickets or event.',
+  alternates: { canonical: '/support' },
 };
 
 export default function SupportPage() {

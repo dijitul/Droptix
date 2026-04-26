@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'Accessibility',
   description: 'Droptix accessibility commitments and known issues.',
+  alternates: { canonical: '/accessibility' },
 };
 
 export default function AccessibilityPage() {

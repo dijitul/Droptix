@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { ArrowRight, ShieldCheck, Clock, PoundSterling } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +7,13 @@ import { EventCard } from '@/components/event-card';
 import { db } from '@/server/db';
 
 export const dynamic = 'force-dynamic';
+
+// Homepage canonical is set explicitly because the root layout no
+// longer carries one. Without this, Next would emit no canonical and
+// Google would still pick "/" — but being explicit avoids ambiguity.
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 export default async function HomePage() {
   const upcoming = await db.event.findMany({

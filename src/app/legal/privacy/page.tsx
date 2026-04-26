@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'Privacy policy',
   description: 'How Droptix handles your data under UK GDPR.',
+  alternates: { canonical: '/legal/privacy' },
 };
 
 export default function PrivacyPage() {

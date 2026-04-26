@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'About',
   description: 'Why Droptix exists and who it\u2019s for.',
+  alternates: { canonical: '/about' },
 };
 
 export default function AboutPage() {

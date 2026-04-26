@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'Events by genre',
   description: 'Every music genre on Droptix — techno, drum & bass, rock, indie, hip-hop and more.',
+  alternates: { canonical: '/genres' },
 };
 
 export const dynamic = 'force-dynamic';

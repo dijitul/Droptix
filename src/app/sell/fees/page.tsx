@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'Fees & payouts',
   description: "Droptix's transparent fee structure for UK music promoters. 5% + £0.50, nothing hidden.",
+  alternates: { canonical: '/sell/fees' },
 };
 
 export default function FeesPage() {

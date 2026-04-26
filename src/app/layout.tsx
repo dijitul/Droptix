@@ -44,7 +44,11 @@ export const metadata: Metadata = {
   },
   twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
-  alternates: { canonical: '/' },
+  // Canonical is set per-page. Setting it here would force every child
+  // route to canonicalise to "/" (Next.js merges metadata top-down),
+  // which collapses the entire site into one indexed URL. Pages set
+  // their own alternates.canonical; if they don't, Google uses the URL
+  // it crawled — that's fine for /discover, /genres, /cities, etc.
 };
 
 export const viewport: Viewport = {

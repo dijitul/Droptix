@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'Events by city',
   description: 'Browse UK music events by city — Manchester, London, Bristol, Leeds and more.',
+  alternates: { canonical: '/cities' },
 };
 
 export const dynamic = 'force-dynamic';

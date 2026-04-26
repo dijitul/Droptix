@@ -5,6 +5,7 @@ export const metadata = {
   title: 'Sign in',
   description: 'Sign in to Droptix with a magic link — no passwords.',
   robots: { index: false, follow: false },
+  alternates: { canonical: '/login' },
 };
 
 export default async function LoginPage({

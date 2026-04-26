@@ -7,6 +7,7 @@ export const metadata = {
   title: 'For promoters',
   description:
     'Put UK music events on sale with Droptix. Lower fees than Skiddle. Faster payouts than Eventbrite. Scanner PWA for the door.',
+  alternates: { canonical: '/sell' },
 };
 
 export default function SellPage() {

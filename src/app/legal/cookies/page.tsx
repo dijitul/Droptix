@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'Cookie notice',
   description: 'Which cookies Droptix sets and why.',
+  alternates: { canonical: '/legal/cookies' },
 };
 
 export default function CookiesPage() {

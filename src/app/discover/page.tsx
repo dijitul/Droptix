@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'All events',
   description: 'Every upcoming UK gig, club night and festival on Droptix.',
+  alternates: { canonical: '/discover' },
 };
 
 export const dynamic = 'force-dynamic';

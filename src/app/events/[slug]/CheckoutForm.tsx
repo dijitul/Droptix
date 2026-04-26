@@ -150,8 +150,11 @@ export function CheckoutForm({
         })}
       </RadioGroup>
 
-      <div>
-        <Label htmlFor="qty">Quantity</Label>
+      <div role="group" aria-labelledby="qty-label">
+        {/* role=group + aria-labelledby because <label htmlFor=qty> only
+            associates with form controls; a <div> isn't one. SR users
+            now hear "Quantity, group, 1, decrease quantity button…". */}
+        <span id="qty-label" className="text-sm font-medium leading-none">Quantity</span>
         <div className="mt-1 inline-flex items-center rounded-lg border border-input">
           <Button
             type="button"
@@ -163,7 +166,11 @@ export function CheckoutForm({
           >
             <Minus className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <div id="qty" aria-live="polite" className="min-w-[3rem] text-center text-base font-medium">
+          <div
+            aria-live="polite"
+            aria-atomic="true"
+            className="min-w-[3rem] text-center text-base font-medium"
+          >
             {quantity}
           </div>
           <Button

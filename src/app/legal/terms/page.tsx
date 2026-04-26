@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata = {
   title: 'Terms of service',
   description: 'Droptix terms of service for buyers and event organisers.',
+  alternates: { canonical: '/legal/terms' },
 };
 
 export default function TermsPage() {
