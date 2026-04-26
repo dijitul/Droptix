@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { MapPin, Clock, Calendar as CalendarIcon, Shield } from 'lucide-react';
 import { db } from '@/server/db';
@@ -146,7 +147,16 @@ export default async function EventPage({ params }: { params: Promise<Params> })
               {event.venue && (
                 <Meta icon={MapPin} label="Venue">
                   <div className="leading-snug">
-                    <div className="font-medium text-foreground">{event.venue.name}</div>
+                    {event.venue.slug ? (
+                      <Link
+                        href={`/venues/${event.venue.slug}`}
+                        className="font-medium text-foreground hover:text-primary hover:underline"
+                      >
+                        {event.venue.name}
+                      </Link>
+                    ) : (
+                      <div className="font-medium text-foreground">{event.venue.name}</div>
+                    )}
                     <div className="text-xs text-muted-foreground">
                       {event.venue.addressLine1}, {event.venue.city} {event.venue.postcode}
                     </div>
@@ -154,7 +164,16 @@ export default async function EventPage({ params }: { params: Promise<Params> })
                 </Meta>
               )}
               <Meta icon={Shield} label="Organiser">
-                {event.organiser.name}
+                {event.organiser.slug ? (
+                  <Link
+                    href={`/organisers/${event.organiser.slug}`}
+                    className="text-foreground hover:text-primary hover:underline"
+                  >
+                    {event.organiser.name}
+                  </Link>
+                ) : (
+                  event.organiser.name
+                )}
               </Meta>
             </dl>
 

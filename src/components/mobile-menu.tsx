@@ -57,7 +57,7 @@ export function MobileMenu({ isAuthed }: { isAuthed: boolean }) {
 
   const panel = open && mounted ? (
     <div
-      className="fixed inset-0 z-[100] md:hidden"
+      className="fixed inset-0 z-[100] lg:hidden"
       role="dialog"
       aria-modal="true"
       aria-label="Site menu"
@@ -89,6 +89,8 @@ export function MobileMenu({ isAuthed }: { isAuthed: boolean }) {
           <MobileLink href="/discover">Events</MobileLink>
           <MobileLink href="/genres">Genres</MobileLink>
           <MobileLink href="/cities">Cities</MobileLink>
+          <MobileLink href="/venues">Venues</MobileLink>
+          <MobileLink href="/organisers">Promoters</MobileLink>
           <MobileLink href="/sell">For organisers</MobileLink>
           <div className="my-3 border-t border-outline-variant/60" aria-hidden="true" />
           {isAuthed ? (
@@ -128,7 +130,7 @@ export function MobileMenu({ isAuthed }: { isAuthed: boolean }) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-10 w-10 items-center justify-center border-2 border-outline-variant text-foreground md:hidden"
+        className="flex h-10 w-10 items-center justify-center border-2 border-outline-variant text-foreground lg:hidden"
       >
         {open ? (
           <X className="h-5 w-5" aria-hidden="true" />

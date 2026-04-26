@@ -24,6 +24,8 @@ export function SiteFooter() {
           <FooterLink href="/discover">All events</FooterLink>
           <FooterLink href="/genres">By genre</FooterLink>
           <FooterLink href="/cities">By city</FooterLink>
+          <FooterLink href="/venues">By venue</FooterLink>
+          <FooterLink href="/organisers">By promoter</FooterLink>
           <FooterLink href="/discover?when=tonight">Tonight</FooterLink>
           <FooterLink href="/discover?when=this-weekend">This weekend</FooterLink>
         </FooterColumn>

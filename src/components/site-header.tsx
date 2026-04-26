@@ -27,10 +27,12 @@ export async function SiteHeader() {
           <span>Droptix</span>
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center gap-6 md:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-6 lg:flex">
           <NavLink href="/discover">Events</NavLink>
           <NavLink href="/genres">Genres</NavLink>
           <NavLink href="/cities">Cities</NavLink>
+          <NavLink href="/venues">Venues</NavLink>
+          <NavLink href="/organisers">Promoters</NavLink>
           <NavLink href="/sell">For organisers</NavLink>
         </nav>
 
@@ -40,7 +42,7 @@ export async function SiteHeader() {
           ) : (
             <Link
               href="/login"
-              className="hidden text-sm font-medium text-muted-foreground hover:text-foreground md:inline-block"
+              className="hidden text-sm font-medium text-muted-foreground hover:text-foreground lg:inline-block"
             >
               Sign in
             </Link>

@@ -21,11 +21,27 @@ type EventCardProps = {
  * in the top-left, title slabbed in Space Grotesk, small tech labels
  * everywhere. Hover raises a lime border and shifts the image up.
  *
- * The card itself is a `<Link>` to the event page, but organiser + venue
- * names are rendered as nested links inside it. We intentionally use a
- * `<div>` outer wrapper plus an absolutely-positioned card-cover link so
- * inner links remain individually tappable (clickable nested anchors are
- * invalid HTML; this is the standard "card pattern" workaround).
+ * Clickability model — "card pattern" with nested affordances:
+ *
+ *   Outer <div>            ← positioning context, hover/focus-within ring
+ *   ├── hero <div>         ← image, date chit, sold-out badge (no z)
+ *   ├── body <div>         ← title, subtitle, venue, organiser (no z)
+ *   ├── nested <Link>s     ← venue, organiser (relative z-20 → on top)
+ *   └── card-cover <Link>  ← absolute inset-0 z-10, last in DOM
+ *
+ * The card-cover Link covers the WHOLE card (including the hero, so
+ * tapping the image works), and sits at z-10 — above the body text
+ * (no z-index → default stacking) and below the nested venue/organiser
+ * Links (z-20). Clicks on dead space, the hero, or the title hit the
+ * cover; clicks on a venue/organiser name hit the more-specific link.
+ *
+ * Why this matters: the previous version put the cover at z-0 and the
+ * title at z-[1], so the title visually overlapped the cover and
+ * absorbed every click. The card was effectively unclickable.
+ *
+ * Nested anchors are invalid HTML, so we cannot wrap the whole thing
+ * in <Link> and still keep the venue/organiser links separately
+ * navigable. The absolute card-cover is the standard workaround.
  */
 export function EventCard({
   slug,
@@ -81,29 +97,21 @@ export function EventCard({
         )}
       </div>
 
-      <div className="relative flex flex-1 flex-col gap-1 border-t-2 border-outline-variant bg-surface-container p-4">
-        {/* Card-cover link: makes the body clickable, but nested links inside
-            the body still work because they have higher z-index. */}
-        <Link
-          href={`/events/${slug}`}
-          aria-label={`${title} at ${venue?.name ?? 'venue TBA'}, ${formatEventDate(startsAt)}`}
-          className="absolute inset-0 z-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        />
-
-        <h3 className="relative z-[1] line-clamp-2 font-display text-lg font-bold leading-tight tracking-tight">
+      <div className="flex flex-1 flex-col gap-1 border-t-2 border-outline-variant bg-surface-container p-4">
+        <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight tracking-tight">
           {title}
         </h3>
         {subtitle && (
-          <p className="relative z-[1] line-clamp-1 text-sm text-muted-foreground">{subtitle}</p>
+          <p className="line-clamp-1 text-sm text-muted-foreground">{subtitle}</p>
         )}
 
         {venue && (
-          <p className="relative z-[1] mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3 shrink-0 text-tertiary" aria-hidden="true" />
             {venueHref ? (
               <Link
                 href={venueHref}
-                className="relative z-[2] truncate hover:text-primary hover:underline"
+                className="relative z-20 truncate hover:text-primary hover:underline"
               >
                 {venue.name}, {venue.city}
               </Link>
@@ -115,11 +123,11 @@ export function EventCard({
           </p>
         )}
 
-        <div className="relative z-[1] mt-auto flex items-center justify-between border-t border-outline-variant/50 pt-3">
+        <div className="mt-auto flex items-center justify-between border-t border-outline-variant/50 pt-3">
           {organiserHref ? (
             <Link
               href={organiserHref}
-              className="relative z-[2] label-tech truncate text-muted-foreground hover:text-primary hover:underline"
+              className="relative z-20 label-tech truncate text-muted-foreground hover:text-primary hover:underline"
             >
               {organiser.name}
             </Link>
@@ -133,6 +141,15 @@ export function EventCard({
           )}
         </div>
       </div>
+
+      {/* Card-cover link: absolute over the WHOLE card (hero + body), sits
+          at z-10 — above body content (no z) and below nested links (z-20).
+          Last in DOM so default stacking puts it above earlier siblings. */}
+      <Link
+        href={`/events/${slug}`}
+        aria-label={`${title} at ${venue?.name ?? 'venue TBA'}, ${formatEventDate(startsAt)}`}
+        className="absolute inset-0 z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      />
 
       <time dateTime={toIsoLondon(startsAt)} className="sr-only">
         {formatEventDate(startsAt)} at {formatEventTime(startsAt)}
