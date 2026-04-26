@@ -256,7 +256,7 @@ model OrganiserMember {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organiserId, userId])
-  @@index([userId])
+  // userId already indexed by MariaDB FK auto-index (OrganiserMember_userId_fkey)
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -555,7 +555,7 @@ model OrderItem {
   tickets    Ticket[]
 
   @@index([orderId])
-  @@index([ticketTypeId])         // ticket-type usage / sales aggregates
+  // ticketTypeId already indexed by MariaDB FK auto-index
 }
 
 model Ticket {
@@ -595,8 +595,7 @@ model Ticket {
   @@index([holderEmail])
   @@index([holderEmail, issuedAt])      // /account/tickets sort by issued
   @@index([eventId, holderEmail])       // door-lookup: search guest by email at the door
-  @@index([ticketTypeId])               // per-type sales counts
-  @@index([orderItemId])                // order-item → tickets join
+  // ticketTypeId / orderItemId already indexed by MariaDB FK auto-indexes
 }
 
 // ═══════════════════════════════════════════════════════════════
