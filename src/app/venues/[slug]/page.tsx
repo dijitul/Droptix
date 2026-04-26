@@ -37,8 +37,9 @@ export default async function VenuePublicPage({ params }: { params: Promise<Para
         },
         orderBy: { startsAt: 'asc' },
         include: {
-          venue: { select: { name: true, city: true } },
-          organiser: { select: { name: true } },
+          venue: { select: { name: true, city: true, slug: true } },
+          organiser: { select: { name: true, slug: true } },
+          heroImage: { select: { id: true } },
           ticketTypes: {
             where: { isHidden: false },
             orderBy: { priceFaceValue: 'asc' },
@@ -143,6 +144,7 @@ export default async function VenuePublicPage({ params }: { params: Promise<Para
                   organiser={e.organiser}
                   fromPrice={cheapest ? { amount: cheapest.priceFaceValue, currency: cheapest.currency } : null}
                   soldOut={allSoldOut}
+                heroUrl={e.heroImage ? `/api/images/${e.heroImage.id}` : null}
                 />
               );
             })}

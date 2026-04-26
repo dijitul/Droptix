@@ -35,8 +35,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const event = await loadEvent(slug);
   if (!event) return {};
+  // Use `absolute` to bypass the root layout's `· Droptix` template —
+  // event.metaTitle (set at create time) already includes the suffix,
+  // so without `absolute` we'd get "Title · Droptix · Droptix".
   return {
-    title: event.metaTitle ?? event.title,
+    title: { absolute: event.metaTitle ?? `${event.title} · Droptix` },
     description: event.metaDescription ?? event.subtitle ?? event.description.slice(0, 160),
     alternates: { canonical: `/events/${event.slug}` },
     openGraph: {
@@ -55,6 +58,23 @@ export default async function EventPage({ params }: { params: Promise<Params> })
   const cheapest = event.ticketTypes[0];
   const allSoldOut =
     event.ticketTypes.length > 0 && event.ticketTypes.every((t) => t.soldCount >= t.capacity);
+
+  // Resolve the commission rule that ACTUALLY applies to this event so
+  // the buyer's fee preview matches what Stripe will charge. Per-organiser
+  // override wins; falls back to the platform default.
+  const feeRule =
+    (await db.commissionRule.findFirst({
+      where: {
+        organiserId: event.organiserId,
+        effectiveFrom: { lte: new Date() },
+        OR: [{ effectiveUntil: null }, { effectiveUntil: { gte: new Date() } }],
+      },
+      orderBy: { effectiveFrom: 'desc' },
+    })) ??
+    (await db.commissionRule.findFirst({
+      where: { organiserId: null, effectiveFrom: { lte: new Date() } },
+      orderBy: { effectiveFrom: 'desc' },
+    }));
 
   const jsonLd = eventJsonLd(event, env.NEXT_PUBLIC_APP_URL);
   const breadcrumbs = breadcrumbsJsonLd([
@@ -164,6 +184,16 @@ export default async function EventPage({ params }: { params: Promise<Params> })
               cheapestFormatted={
                 cheapest
                   ? Money.fromMinor(cheapest.priceFaceValue, cheapest.currency as Currency).format()
+                  : null
+              }
+              commissionRule={
+                feeRule
+                  ? {
+                      percentageBps: feeRule.percentageBps,
+                      perTicketFee: feeRule.perTicketFee.toString(),
+                      feeMode: feeRule.feeMode,
+                      freeEventsZeroFee: feeRule.freeEventsZeroFee,
+                    }
                   : null
               }
             />

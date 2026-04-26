@@ -21,12 +21,21 @@ type TicketTypeView = {
   maxPerOrder: number;
 };
 
+type CommissionRuleView = {
+  percentageBps: number;
+  perTicketFee: string;          // BigInt → string for client serialisation
+  feeMode: 'PASSED_TO_BUYER' | 'ABSORBED_BY_ORGANISER';
+  freeEventsZeroFee: boolean;
+};
+
 export function CheckoutForm({
   ticketTypes,
   cheapestFormatted,
+  commissionRule,
 }: {
   ticketTypes: TicketTypeView[];
   cheapestFormatted: string | null;
+  commissionRule: CommissionRuleView | null;
 }) {
   const firstAvailable = ticketTypes.find((t) => t.remaining > 0) ?? ticketTypes[0];
   const [selectedId, setSelectedId] = useState(firstAvailable?.id ?? '');
@@ -37,19 +46,35 @@ export function CheckoutForm({
 
   const feeBreakdown = useMemo(() => {
     if (!selected) return null;
-    // Client-side *preview only* — server recomputes authoritatively
     const face = Money.fromMinor(BigInt(selected.priceFaceValue), selected.currency);
     const subtotal = face.multiplyByQuantity(quantity);
-    // Match server default 5% + £0.50 for preview; correct rule applied server-side
-    const pct = subtotal.multiplyByBps(500);
-    const fixed = Money.fromMinor(50n, selected.currency).multiplyByQuantity(quantity);
-    const fee = pct.add(fixed);
+
+    // Use the actual rule that applies to this event — this is what the
+    // server will charge. Falls back to platform default if no rule passed
+    // (shouldn't happen at runtime).
+    const pctBps = commissionRule?.percentageBps ?? 500;
+    const perTicketMinor = BigInt(commissionRule?.perTicketFee ?? '50');
+    const feeMode = commissionRule?.feeMode ?? 'PASSED_TO_BUYER';
+    const zeroForFree = commissionRule?.freeEventsZeroFee ?? true;
+
+    let fee: Money;
+    if (zeroForFree && face.isZero()) {
+      fee = Money.fromMinor(0n, selected.currency);
+    } else {
+      const pct = subtotal.multiplyByBps(pctBps);
+      const fixed = Money.fromMinor(perTicketMinor, selected.currency).multiplyByQuantity(quantity);
+      fee = pct.add(fixed);
+    }
+
+    const total = feeMode === 'PASSED_TO_BUYER' ? subtotal.add(fee) : subtotal;
     return {
       subtotal: subtotal.format(),
       fee: fee.format(),
-      total: subtotal.add(fee).format(),
+      total: total.format(),
+      feeMode,
+      hasFee: !fee.isZero() && feeMode === 'PASSED_TO_BUYER',
     };
-  }, [selected, quantity]);
+  }, [selected, quantity, commissionRule]);
 
   async function onSubmit(formData: FormData) {
     startTransition(async () => {
@@ -190,14 +215,16 @@ export function CheckoutForm({
               <dt className="text-muted-foreground">{quantity} × ticket</dt>
               <dd>{feeBreakdown.subtotal}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="flex items-center gap-1 text-muted-foreground">
-                Booking fee
-                <Info className="h-3 w-3" aria-hidden="true" />
-              </dt>
-              <dd>{feeBreakdown.fee}</dd>
-            </div>
-            <div className="mt-1 flex justify-between border-t border-border pt-1 font-semibold">
+            {feeBreakdown.hasFee && (
+              <div className="flex justify-between">
+                <dt className="flex items-center gap-1 text-muted-foreground">
+                  Booking fee
+                  <Info className="h-3 w-3" aria-hidden="true" />
+                </dt>
+                <dd>{feeBreakdown.fee}</dd>
+              </div>
+            )}
+            <div className="mt-1 flex justify-between border-t border-outline-variant pt-1 font-semibold">
               <dt>Total</dt>
               <dd>{feeBreakdown.total}</dd>
             </div>

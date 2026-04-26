@@ -25,8 +25,9 @@ async function loadGenre(slug: string) {
     orderBy: { startsAt: 'asc' },
     take: 60,
     include: {
-      venue: { select: { name: true, city: true } },
-      organiser: { select: { name: true } },
+      venue: { select: { name: true, city: true, slug: true } },
+      organiser: { select: { name: true, slug: true } },
+          heroImage: { select: { id: true } },
       ticketTypes: {
         where: { isHidden: false },
         orderBy: { priceFaceValue: 'asc' },
@@ -129,6 +130,7 @@ export default async function GenrePage({ params }: { params: Promise<Params> })
                   organiser={e.organiser}
                   fromPrice={cheapest ? { amount: cheapest.priceFaceValue, currency: cheapest.currency } : null}
                   soldOut={allSoldOut}
+                heroUrl={e.heroImage ? `/api/images/${e.heroImage.id}` : null}
                 />
               );
             })}

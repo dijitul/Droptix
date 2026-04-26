@@ -37,9 +37,21 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
 
   const venues = await db.venue.findMany({ orderBy: { name: 'asc' } });
 
+  // Format a stored UTC Date as a Europe/London wall-clock string for the
+  // <input type="datetime-local"> default value. Matches what the user
+  // originally typed; the Node runtime's offset is irrelevant here.
   const toLocalInput = (d: Date) => {
-    const offset = d.getTimezoneOffset();
-    return new Date(d.getTime() - offset * 60_000).toISOString().slice(0, 16);
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/London',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '01';
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
   };
 
   return (

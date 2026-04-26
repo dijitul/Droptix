@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from './db';
 import { requireOrganiser } from './guards';
 import { generateEventSigningKey } from '@/lib/ticket-signing';
+import { parseLondonLocal } from '@/lib/format';
 import type { AgeRating, EventStatus } from '@prisma/client';
 
 /**
@@ -69,8 +70,10 @@ export async function createEvent(formData: FormData): Promise<void> {
     throw new Error('Add a description of at least 10 characters — a rough line is fine, you can polish later.');
   if (!startsAtInput || !endsAtInput) throw new Error('Both start and end times are required.');
 
-  const startsAt = new Date(startsAtInput);
-  const endsAt = new Date(endsAtInput);
+  // datetime-local inputs have no timezone — interpret as Europe/London
+  // wall-clock so an organiser typing 18:00 in summer means 17:00Z, not 18:00Z.
+  const startsAt = parseLondonLocal(startsAtInput);
+  const endsAt = parseLondonLocal(endsAtInput);
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
     throw new Error('Bad date format.');
   }
@@ -122,8 +125,8 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const title = String(formData.get('title') ?? '').trim();
   const subtitle = String(formData.get('subtitle') ?? '').trim() || null;
   const description = String(formData.get('description') ?? '').trim();
-  const startsAt = new Date(String(formData.get('startsAt') ?? ''));
-  const endsAt = new Date(String(formData.get('endsAt') ?? ''));
+  const startsAt = parseLondonLocal(String(formData.get('startsAt') ?? ''));
+  const endsAt = parseLondonLocal(String(formData.get('endsAt') ?? ''));
   const ageRating = String(formData.get('ageRating') ?? 'ALL') as AgeRating;
   const status = String(formData.get('status') ?? 'DRAFT') as EventStatus;
   const venueId = String(formData.get('venueId') ?? '') || null;

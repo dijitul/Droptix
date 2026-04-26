@@ -132,12 +132,18 @@ pnpm test:e2e             # Playwright + axe
 ## Phase roadmap
 
 - ✅ **Phase 0** (a,b,c) — scaffold, schema, auth, Stripe/Postmark/R2 clients, admin shell + integrations panel
-- ✅ **Phase 1a** — buyer checkout vertical end-to-end
+- ✅ **Phase 1a** — buyer checkout vertical end-to-end (live + verified)
 - ✅ **Phase 1b** — brand rebrand (Overdrive Industrial), nav/footer, music-only scope, /cities + /uk/[city] + /uk/[city]/[category] + /genres + /genres/[slug] hubs, /sell + /sell/fees landing, 404, enriched sitemap
-- ✅ **Phase 2** — organiser side: /sell/start + /organiser layout + dashboard + Stripe Connect Express onboarding + event CRUD + in-browser image crop → R2 + attendees + CSV export + door scanner PWA (first-scan-wins via row-locked tx)
+- ✅ **Phase 2** — organiser side: /sell/start + /organiser layout + dashboard + Stripe Connect Express onboarding + event CRUD + in-browser image crop + attendees + CSV export + door scanner PWA (first-scan-wins via row-locked tx)
+- ✅ **Phase 2.1** — Mailgun EU swapped in for Postmark; admin venue + city CRUD; org admin user management; admin events list with cancel/delete
+- ✅ **Phase 2.2** — local filesystem image storage (R2 optional, swappable); /api/images route streams via Node; in-flow crop → upload tokens on globalThis (server-action ↔ route-handler bridge)
+- ✅ **Phase 2.3** — error boundaries everywhere (organiser/admin/sell/account/root) + ServerActionForm wrapper that toasts errors + preserves form state
+- ✅ **Phase 2.4** — site-wide JSON-LD (Organization, WebSite + SearchAction); robots/sitemap fixes; legal page polish; mobile menu wired correctly
+- ✅ **Phase 2.5** — fine-tooth-comb audit (UX, mobile, DB, copy specialists in parallel) + DB index batch (Order, Event, Ticket, ScanEvent, WebhookEvent composite indexes for hot paths) + datetime-local parsed as Europe/London (BST/GMT bug fix) + clickable organiser/venue from event cards + heroImage thumbnails on cards + commission preview uses actual organiser rule
 - 🔜 **Phase 1c** — Apple Wallet + Google Wallet pass generation (needs Apple cert + Google service account)
 - 🔜 **Phase 2c** — scanner service worker + IndexedDB offline sync, scanner crew PIN flow, manual door-code fallback
-- 🔜 **Phase 3** — full admin (commission editor, payout/dispute queue, platform KPIs, audit viewer)
+- 🔜 **Phase 2d** — Tonight / This-weekend filters on /discover; programmatic city×genre routes; event hero `<img>` → next/image with srcset
+- 🔜 **Phase 3** — full admin (payout/dispute queue, platform KPIs, audit viewer); waitlists; Verified Organiser badge
 - 🔜 **Phase 4** — SEO moat, a11y audit, load test, security review, legal review, Skiddle/Fatsoma CSV importer
 
 ## Design system — Overdrive Industrial

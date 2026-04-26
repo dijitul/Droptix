@@ -9,8 +9,8 @@ type EventCardProps = {
   title: string;
   subtitle?: string | null;
   startsAt: Date;
-  venue: { name: string; city: string } | null;
-  organiser: { name: string };
+  venue: { name: string; city: string; slug?: string } | null;
+  organiser: { name: string; slug?: string };
   fromPrice: { amount: bigint; currency: Currency } | null;
   soldOut?: boolean;
   heroUrl?: string | null;
@@ -20,6 +20,12 @@ type EventCardProps = {
  * Event card — industrial poster aesthetic. Portrait hero, date chit
  * in the top-left, title slabbed in Space Grotesk, small tech labels
  * everywhere. Hover raises a lime border and shifts the image up.
+ *
+ * The card itself is a `<Link>` to the event page, but organiser + venue
+ * names are rendered as nested links inside it. We intentionally use a
+ * `<div>` outer wrapper plus an absolutely-positioned card-cover link so
+ * inner links remain individually tappable (clickable nested anchors are
+ * invalid HTML; this is the standard "card pattern" workaround).
  */
 export function EventCard({
   slug,
@@ -38,19 +44,18 @@ export function EventCard({
     .format(startsAt)
     .toUpperCase();
 
+  const venueHref = venue?.slug ? `/venues/${venue.slug}` : null;
+  const organiserHref = organiser.slug ? `/organisers/${organiser.slug}` : null;
+
   return (
-    <Link
-      href={`/events/${slug}`}
-      className="group relative flex flex-col overflow-hidden border-2 border-outline-variant bg-surface-container transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      aria-label={`${title} at ${venue?.name ?? 'venue TBA'}, ${formatEventDate(startsAt)}`}
-    >
+    <div className="group relative flex flex-col overflow-hidden border-2 border-outline-variant bg-surface-container transition-colors hover:border-primary focus-within:border-primary">
       <div className="relative aspect-[4/5] w-full overflow-hidden bg-surface-dim">
         {heroUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={heroUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover opacity-85 transition-all duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
+            className="absolute inset-0 h-full w-full object-cover opacity-90 transition-all duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
             loading="lazy"
           />
         ) : (
@@ -62,10 +67,8 @@ export function EventCard({
           </div>
         )}
 
-        {/* Ink gradient for copy legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-surface/95 via-surface/40 to-transparent" aria-hidden="true" />
 
-        {/* Date chit — top left */}
         <div className="absolute left-3 top-3 flex flex-col items-start border border-primary bg-background/90 px-2.5 py-1.5 backdrop-blur">
           <span className="label-tech text-tertiary">{month}</span>
           <span className="font-display text-xl font-bold leading-none text-foreground">{day}</span>
@@ -78,21 +81,51 @@ export function EventCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 border-t-2 border-outline-variant bg-surface-container p-4">
-        <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight tracking-tight">{title}</h3>
-        {subtitle && <p className="line-clamp-1 text-sm text-muted-foreground">{subtitle}</p>}
+      <div className="relative flex flex-1 flex-col gap-1 border-t-2 border-outline-variant bg-surface-container p-4">
+        {/* Card-cover link: makes the body clickable, but nested links inside
+            the body still work because they have higher z-index. */}
+        <Link
+          href={`/events/${slug}`}
+          aria-label={`${title} at ${venue?.name ?? 'venue TBA'}, ${formatEventDate(startsAt)}`}
+          className="absolute inset-0 z-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        />
+
+        <h3 className="relative z-[1] line-clamp-2 font-display text-lg font-bold leading-tight tracking-tight">
+          {title}
+        </h3>
+        {subtitle && (
+          <p className="relative z-[1] line-clamp-1 text-sm text-muted-foreground">{subtitle}</p>
+        )}
 
         {venue && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3 text-tertiary" aria-hidden="true" />
-            <span className="truncate">
-              {venue.name}, {venue.city}
-            </span>
+          <p className="relative z-[1] mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0 text-tertiary" aria-hidden="true" />
+            {venueHref ? (
+              <Link
+                href={venueHref}
+                className="relative z-[2] truncate hover:text-primary hover:underline"
+              >
+                {venue.name}, {venue.city}
+              </Link>
+            ) : (
+              <span className="truncate">
+                {venue.name}, {venue.city}
+              </span>
+            )}
           </p>
         )}
 
-        <div className="mt-auto flex items-center justify-between border-t border-outline-variant/50 pt-3">
-          <span className="label-tech truncate text-muted-foreground">{organiser.name}</span>
+        <div className="relative z-[1] mt-auto flex items-center justify-between border-t border-outline-variant/50 pt-3">
+          {organiserHref ? (
+            <Link
+              href={organiserHref}
+              className="relative z-[2] label-tech truncate text-muted-foreground hover:text-primary hover:underline"
+            >
+              {organiser.name}
+            </Link>
+          ) : (
+            <span className="label-tech truncate text-muted-foreground">{organiser.name}</span>
+          )}
           {price && (
             <span className="shrink-0 font-display text-base font-bold text-primary">
               {price.format()}
@@ -104,6 +137,6 @@ export function EventCard({
       <time dateTime={toIsoLondon(startsAt)} className="sr-only">
         {formatEventDate(startsAt)} at {formatEventTime(startsAt)}
       </time>
-    </Link>
+    </div>
   );
 }

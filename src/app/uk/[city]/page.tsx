@@ -35,8 +35,9 @@ async function loadCity(citySlug: string) {
     orderBy: { startsAt: 'asc' },
     take: 60,
     include: {
-      venue: { select: { name: true, city: true } },
-      organiser: { select: { name: true } },
+      venue: { select: { name: true, city: true, slug: true } },
+      organiser: { select: { name: true, slug: true } },
+          heroImage: { select: { id: true } },
       categories: { include: { category: { select: { slug: true, name: true } } } },
       ticketTypes: {
         where: { isHidden: false },
@@ -169,6 +170,7 @@ export default async function CityHub({ params }: { params: Promise<Params> }) {
                 organiser={e.organiser}
                 fromPrice={cheapest ? { amount: cheapest.priceFaceValue, currency: cheapest.currency } : null}
                 soldOut={allSoldOut}
+                heroUrl={e.heroImage ? `/api/images/${e.heroImage.id}` : null}
               />
             );
           })}
