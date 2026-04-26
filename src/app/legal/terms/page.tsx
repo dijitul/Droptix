@@ -20,9 +20,9 @@ export default function TermsPage() {
       <div className="prose prose-invert mt-10 max-w-none">
         <h2>1. Who we are</h2>
         <p>
-          Droptix is a ticketing marketplace operated by Droptix Ltd, connecting UK music event
-          organisers with ticket buyers. Organisers are the sellers of record for tickets; Droptix
-          acts as their payment facilitator via Stripe Connect.
+          Droptix is a ticketing marketplace connecting UK music event organisers with ticket
+          buyers. Organisers are the sellers of record for tickets; Droptix acts as their payment
+          facilitator via Stripe Connect.
         </p>
 
         <h2>2. Your tickets</h2>

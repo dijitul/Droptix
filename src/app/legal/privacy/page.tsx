@@ -21,9 +21,9 @@ export default function PrivacyPage() {
       <div className="prose prose-invert mt-10 max-w-none">
         <h2>Data controller</h2>
         <p>
-          Droptix Ltd is the data controller for your account and buyer data. When you book a
-          ticket, the event organiser becomes a joint controller for your name, email, ticket
-          type, and scan status (only) under UK GDPR Art 26.
+          Droptix is the data controller for your account and buyer data. When you book a ticket,
+          the event organiser becomes a joint controller for your name, email, ticket type, and
+          scan status (only) under UK GDPR Art 26.
         </p>
 
         <h2>What we collect</h2>

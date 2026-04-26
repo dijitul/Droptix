@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { Toaster } from '@/components/ui/toaster';
+import { CookieBanner } from '@/components/cookie-banner';
 import './globals.css';
 
 // Google Analytics 4 measurement ID. Hard-coded because the tag is a
@@ -132,10 +133,36 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <Toaster />
 
+        {/* Cookie consent banner — reads localStorage, shows once if no
+            choice exists, then pushes 'consent update' to dataLayer
+            so GA respects the answer. Mounted client-side. */}
+        <CookieBanner />
+
+        {/* Google Consent Mode v2 defaults — MUST run before gtag.js so
+            the consent state is set before any cookie write attempt.
+            Strategy: beforeInteractive ensures it's inlined in <head>
+            and executes before the gtag.js bundle below. We default
+            EVERYTHING to denied; the CookieBanner pushes an 'update'
+            once the user accepts. UK PECR + ICO 2023 guidance. */}
+        <Script id="ga-consent-default" strategy="beforeInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {
+              ad_storage: 'denied',
+              analytics_storage: 'denied',
+              ad_user_data: 'denied',
+              ad_personalization: 'denied',
+              functionality_storage: 'granted',
+              security_storage: 'granted',
+              wait_for_update: 500
+            });
+          `}
+        </Script>
+
         {/* Google Analytics 4 — afterInteractive so it never blocks
-            paint. Two <Script> blocks: one to load gtag.js, one to
-            initialise the dataLayer + config. dangerouslySetInnerHTML
-            on the second block matches the snippet GA gives you. */}
+            paint. The consent defaults above mean GA loads but writes
+            no cookie until the banner pushes 'consent update'. */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
           strategy="afterInteractive"

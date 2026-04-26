@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { DroptixMark } from './droptix-mark';
+import { CookieResetButton } from './cookie-banner';
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
@@ -41,6 +42,9 @@ export function SiteFooter() {
           <FooterLink href="/legal/terms">Terms</FooterLink>
           <FooterLink href="/legal/privacy">Privacy</FooterLink>
           <FooterLink href="/legal/cookies">Cookies</FooterLink>
+          <li>
+            <CookieResetButton>Cookie settings</CookieResetButton>
+          </li>
           <FooterLink href="/accessibility">Accessibility</FooterLink>
           <FooterLink href="/support">Support</FooterLink>
         </FooterColumn>
@@ -49,7 +53,7 @@ export function SiteFooter() {
       <div className="border-t border-border">
         <div className="container flex flex-col items-start justify-between gap-3 py-5 text-xs text-muted-foreground md:flex-row md:items-center">
           <div className="label-tech">SN-DX-{year}</div>
-          <p>© {year} Droptix Ltd — all rights reserved</p>
+          <p>© {year} Droptix — all rights reserved</p>
           <p>
             Having a problem at the door?{' '}
             <Link href="/support" className="text-tertiary underline underline-offset-2">
