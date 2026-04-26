@@ -15,7 +15,15 @@ import type { NextRequest } from 'next/server';
  *    server-side via guards.ts — middleware is a cheap first pass.
  */
 
-const PROTECTED = [/^\/account/, /^\/organiser/, /^\/admin/, /^\/scanner/];
+// Anchor at a path-segment boundary so /organiser doesn't accidentally
+// gate /organisers (the public promoter directory). Same hazard for
+// /account vs /accounts and /admin vs /admin-anything-else.
+const PROTECTED = [
+  /^\/account(\/|$)/,
+  /^\/organiser(\/|$)/,
+  /^\/admin(\/|$)/,
+  /^\/scanner(\/|$)/,
+];
 const DEDUPE_HEADERS = [
   'host',
   'x-forwarded-host',
