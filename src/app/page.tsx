@@ -39,14 +39,14 @@ export default async function HomePage() {
             Droptix · UK live music
           </Badge>
           <h1 className="text-display-xl uppercase max-w-[22ch]">
-            UK gig and club night tickets, direct from promoters.
+            UK Gig, Club Nights and Event Tickets, direct from the Promoters.
           </h1>
           <p className="mt-5 font-display text-xl font-bold uppercase tracking-tight text-primary">
-            Tickets for rooms that actually sweat.
+            Tickets for the events that matter.
           </p>
           <p className="mt-6 max-w-prose text-lg text-on-surface-variant">
-            Independent UK gigs, club nights and festivals. Fairer fees, faster payouts, and
-            tickets built by people who still go to events.
+            Independent UK Gigs, Club Nights, Festivals and everything in between. Fairer Fees,
+            Faster Payouts and tickets, built by people who care about the Independent scene.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">

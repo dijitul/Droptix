@@ -74,7 +74,7 @@ export default async function OnboardingPage({
         </div>
 
         <h2 className="font-display text-xl font-bold uppercase tracking-tight">
-          {fullyOnboarded ? 'You&rsquo;re all set.' : 'Finish Stripe onboarding'}
+          {fullyOnboarded ? 'You&rsquo;re All Set' : 'Finish Stripe onboarding'}
         </h2>
         <p className="mt-3 text-on-surface-variant">
           {fullyOnboarded ? (

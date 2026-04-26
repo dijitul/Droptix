@@ -42,8 +42,30 @@ export type CreateUploadUrlResult =
       uploadToken: string;
     };
 
-const LOCAL_UPLOAD_TOKENS = new Map<string, { imageId: string; expires: number }>();
+/**
+ * Token map MUST live on globalThis, NOT module scope.
+ *
+ * Next.js compiles server actions and route handlers into separate
+ * bundles. Even when those bundles run in the same Node process, each
+ * bundle gets its own loaded copy of this module — meaning a
+ * module-scoped `new Map()` here is a different Map in the action
+ * vs the route. Tokens minted by `createImageUploadUrl` (server action)
+ * were therefore invisible to `consumeUploadToken` (called from the
+ * route handler), causing every upload to die with "token unknown".
+ *
+ * `globalThis` is truly per-V8-process, so a single Map on it is
+ * visible to all bundles. Standard Next.js pattern (used internally
+ * for the Prisma client singleton, dev caches etc).
+ */
 const LOCAL_TOKEN_TTL_MS = 10 * 60 * 1000;
+type TokenRecord = { imageId: string; expires: number };
+const TOKENS_KEY = '__droptixUploadTokens__';
+const globalForTokens = globalThis as unknown as {
+  [TOKENS_KEY]?: Map<string, TokenRecord>;
+};
+const LOCAL_UPLOAD_TOKENS: Map<string, TokenRecord> =
+  globalForTokens[TOKENS_KEY] ?? new Map<string, TokenRecord>();
+if (!globalForTokens[TOKENS_KEY]) globalForTokens[TOKENS_KEY] = LOCAL_UPLOAD_TOKENS;
 
 export async function createImageUploadUrl(params: {
   mimeType: string;
