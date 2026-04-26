@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { Menu } from 'lucide-react';
 import { DroptixMark } from './droptix-mark';
 import { UserMenu } from './user-menu';
+import { MobileMenu } from './mobile-menu';
 import { auth } from '@/server/auth';
 
 /**
@@ -51,13 +51,9 @@ export async function SiteHeader() {
           >
             Buy tickets
           </Link>
-          <button
-            type="button"
-            aria-label="Open menu"
-            className="flex h-10 w-10 items-center justify-center border-2 border-outline-variant text-foreground md:hidden"
-          >
-            <Menu className="h-5 w-5" aria-hidden="true" />
-          </button>
+          {/* The MobileMenu is a client component — it owns the hamburger
+              button + the slide-down panel. Below md only. */}
+          <MobileMenu isAuthed={isAuthed} />
         </div>
       </div>
       <div className="hazard-stripe" aria-hidden="true" />
