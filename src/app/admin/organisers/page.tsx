@@ -1,15 +1,17 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/server/guards';
 import { db } from '@/server/db';
-import { setOrganiserStatus } from '@/server/admin';
+import { setOrganiserStatus, adminDeleteOrganiser, adminPurgeOrganiser } from '@/server/admin';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PurgeButton } from '@/components/admin-confirm-form';
 
 export const metadata = { title: 'Organisers' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminOrganisersPage() {
-  await requireAdmin();
+  const caller = await requireAdmin();
+  const canPurge = caller.role === 'SUPERADMIN';
 
   const organisers = await db.organiser.findMany({
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
@@ -112,6 +114,27 @@ export default async function AdminOrganisersPage() {
                         <Button asChild size="sm" variant="ghost">
                           <Link href={`/organisers/${o.slug}`} target="_blank">Profile</Link>
                         </Button>
+                        {o._count.events === 0 && o._count.payouts === 0 ? (
+                          <form action={adminDeleteOrganiser.bind(null, o.id)}>
+                            <Button
+                              type="submit"
+                              size="sm"
+                              variant="destructive"
+                              aria-label={`Delete ${o.name}`}
+                              title="Removes empty organiser. Members + commission rules go with it; user accounts are untouched."
+                            >
+                              Delete
+                            </Button>
+                          </form>
+                        ) : canPurge ? (
+                          <PurgeButton
+                            action={adminPurgeOrganiser}
+                            id={o.id}
+                            slug={o.slug}
+                            label="Purge"
+                            warning={`PURGE ${o.name} — this destroys ${o._count.events} event(s), ${o._count.payouts} payout(s), and every ticket + order attached. Buyer accounts are kept. NOT recoverable.`}
+                          />
+                        ) : null}
                       </div>
                     </Td>
                   </tr>

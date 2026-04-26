@@ -220,6 +220,7 @@ export async function adminForceDeleteEvent(eventId: string): Promise<void> {
     db.order.deleteMany({ where: { eventId } }),
     db.ticketType.deleteMany({ where: { eventId } }),
     db.eventCategory.deleteMany({ where: { eventId } }),
+    db.eventArtist.deleteMany({ where: { eventId } }),
     db.eventImage.deleteMany({ where: { eventId } }),
     db.scannerCrew.deleteMany({ where: { eventId } }),
     db.wishlist.deleteMany({ where: { eventId } }),
@@ -233,6 +234,161 @@ export async function adminForceDeleteEvent(eventId: string): Promise<void> {
     before: { title: event.title, slug: event.slug },
   });
   revalidatePath('/admin/events');
+}
+
+/**
+ * Purge an event — SUPERADMIN nuclear option that bypasses every guard,
+ * INCLUDING PAID orders. The audit row records the destruction. This is
+ * intended for cleaning test data before launch and ONLY this. Real
+ * events with real sales should be cancelled-then-refunded, not purged.
+ *
+ * Caller must pass the event slug back as `confirmSlug` so a misclick
+ * can't nuke a sibling row by mistake.
+ */
+export async function adminPurgeEvent(eventId: string, confirmSlug: string): Promise<void> {
+  const admin = await requireSuperAdmin();
+
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    include: {
+      ticketTypes: { select: { soldCount: true, capacity: true } },
+      _count: { select: { orders: true, tickets: true } },
+    },
+  });
+  if (!event) throw new Error('Event not found.');
+  if (event.slug !== confirmSlug) {
+    throw new Error('Slug mismatch — refusing to purge a different event.');
+  }
+
+  const totalSold = event.ticketTypes.reduce((s, t) => s + t.soldCount, 0);
+
+  await db.$transaction([
+    db.scanEvent.deleteMany({ where: { eventId } }),
+    db.ticket.deleteMany({ where: { eventId } }),
+    db.refund.deleteMany({ where: { order: { eventId } } }),
+    db.orderItem.deleteMany({ where: { order: { eventId } } }),
+    db.order.deleteMany({ where: { eventId } }),
+    db.ticketType.deleteMany({ where: { eventId } }),
+    db.eventCategory.deleteMany({ where: { eventId } }),
+    db.eventArtist.deleteMany({ where: { eventId } }),
+    db.eventImage.deleteMany({ where: { eventId } }),
+    db.scannerCrew.deleteMany({ where: { eventId } }),
+    db.wishlist.deleteMany({ where: { eventId } }),
+    db.event.delete({ where: { id: eventId } }),
+  ]);
+
+  await audit({
+    adminId: admin.id,
+    action: 'event.purge',
+    subject: `event:${eventId}`,
+    before: {
+      title: event.title,
+      slug: event.slug,
+      orders: event._count.orders,
+      tickets: event._count.tickets,
+      sold: totalSold,
+    },
+  });
+  revalidatePath('/admin/events');
+  revalidatePath('/discover');
+}
+
+/**
+ * Safely delete an empty organiser — refuses if it has any events,
+ * payouts, or commission rules. Use case: cleaning up dead test orgs,
+ * or an admin/superadmin who registered themselves as an organiser
+ * (e.g. to test the flow) and now wants the org account gone while
+ * keeping their user/admin role intact.
+ */
+export async function adminDeleteOrganiser(organiserId: string): Promise<void> {
+  const admin = await requireAdmin();
+
+  const org = await db.organiser.findUnique({
+    where: { id: organiserId },
+    include: {
+      _count: { select: { events: true, payouts: true, commissionRules: true } },
+    },
+  });
+  if (!org) throw new Error('Organiser not found.');
+
+  if (org._count.events > 0 || org._count.payouts > 0) {
+    throw new Error(
+      `Can't delete — this organiser has ${org._count.events} event(s) and ${org._count.payouts} payout(s). Purge them first or use Purge organiser as SUPERADMIN.`,
+    );
+  }
+
+  // Members + commission rules are safe to drop — no money attached.
+  await db.$transaction([
+    db.organiserMember.deleteMany({ where: { organiserId } }),
+    db.commissionRule.deleteMany({ where: { organiserId } }),
+    db.organiser.delete({ where: { id: organiserId } }),
+  ]);
+
+  await audit({
+    adminId: admin.id,
+    action: 'organiser.delete',
+    subject: `organiser:${organiserId}`,
+    before: { name: org.name, slug: org.slug, email: org.email },
+  });
+  revalidatePath('/admin/organisers');
+}
+
+/**
+ * Purge an organiser AND all their events, members, rules, payouts.
+ * SUPERADMIN-only. Refuses if the organiser has any events with PAID
+ * orders unless `force=true` (passed alongside the slug). Use only
+ * for cleaning test data before launch.
+ *
+ * Buyer User rows are NEVER touched — guests/buyers exist independent
+ * of any organiser.
+ */
+export async function adminPurgeOrganiser(
+  organiserId: string,
+  confirmSlug: string,
+): Promise<void> {
+  const admin = await requireSuperAdmin();
+
+  const org = await db.organiser.findUnique({
+    where: { id: organiserId },
+    include: { events: { select: { id: true } } },
+  });
+  if (!org) throw new Error('Organiser not found.');
+  if (org.slug !== confirmSlug) {
+    throw new Error('Slug mismatch — refusing to purge a different organiser.');
+  }
+
+  const eventIds = org.events.map((e) => e.id);
+
+  await db.$transaction([
+    // Cascade through every event the organiser owns first
+    db.scanEvent.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.ticket.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.refund.deleteMany({ where: { order: { eventId: { in: eventIds } } } }),
+    db.orderItem.deleteMany({ where: { order: { eventId: { in: eventIds } } } }),
+    db.order.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.ticketType.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.eventCategory.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.eventArtist.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.eventImage.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.scannerCrew.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.wishlist.deleteMany({ where: { eventId: { in: eventIds } } }),
+    db.event.deleteMany({ where: { id: { in: eventIds } } }),
+    // Then the organiser itself
+    db.payout.deleteMany({ where: { organiserId } }),
+    db.commissionRule.deleteMany({ where: { organiserId } }),
+    db.organiserMember.deleteMany({ where: { organiserId } }),
+    db.organiser.delete({ where: { id: organiserId } }),
+  ]);
+
+  await audit({
+    adminId: admin.id,
+    action: 'organiser.purge',
+    subject: `organiser:${organiserId}`,
+    before: { name: org.name, slug: org.slug, eventCount: eventIds.length },
+  });
+  revalidatePath('/admin/organisers');
+  revalidatePath('/admin/events');
+  revalidatePath('/discover');
 }
 
 export async function inviteAdmin(formData: FormData): Promise<void> {

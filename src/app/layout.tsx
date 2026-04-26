@@ -1,9 +1,16 @@
 import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, Inter } from 'next/font/google';
+import Script from 'next/script';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
+
+// Google Analytics 4 measurement ID. Hard-coded because the tag is a
+// public identifier — it shows up in every page source. If we ever
+// need to flip GA off in dev, gate the Script blocks below on
+// process.env.NODE_ENV === 'production'.
+const GA_MEASUREMENT_ID = 'G-Q1YX84R3T7';
 
 const display = Space_Grotesk({
   subsets: ['latin'],
@@ -120,6 +127,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteFooter />
 
         <Toaster />
+
+        {/* Google Analytics 4 — afterInteractive so it never blocks
+            paint. Two <Script> blocks: one to load gtag.js, one to
+            initialise the dataLayer + config. dangerouslySetInnerHTML
+            on the second block matches the snippet GA gives you. */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="ga-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
       </body>
     </html>
   );

@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { Search, ExternalLink } from 'lucide-react';
 import { requireAdmin } from '@/server/guards';
 import { db } from '@/server/db';
-import { adminSetEventStatus, adminDeleteEvent, adminForceDeleteEvent } from '@/server/admin';
+import { adminSetEventStatus, adminDeleteEvent, adminForceDeleteEvent, adminPurgeEvent } from '@/server/admin';
+import { PurgeButton } from '@/components/admin-confirm-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -198,17 +199,27 @@ export default async function AdminEventsPage({
                             </Button>
                           </form>
                         ) : canForce ? (
-                          <form action={adminForceDeleteEvent.bind(null, e.id)}>
-                            <Button
-                              type="submit"
-                              size="sm"
-                              variant="destructive"
-                              aria-label={`Force delete ${e.title}`}
-                              title="Cascades through unpaid orders, test scans, and reservations. Refuses if any tickets are PAID."
-                            >
-                              Force delete
-                            </Button>
-                          </form>
+                          e._count.orders === 0 && sold === 0 ? (
+                            <form action={adminForceDeleteEvent.bind(null, e.id)}>
+                              <Button
+                                type="submit"
+                                size="sm"
+                                variant="destructive"
+                                aria-label={`Force delete ${e.title}`}
+                                title="Cascades through unpaid orders, test scans, and reservations. Refuses if any tickets are PAID."
+                              >
+                                Force delete
+                              </Button>
+                            </form>
+                          ) : (
+                            <PurgeButton
+                              action={adminPurgeEvent}
+                              id={e.id}
+                              slug={e.slug}
+                              label="Purge"
+                              warning={`PURGE ${e.title} — this destroys ${sold} sold ticket(s), ${e._count.orders} PAID order(s), and every scan + refund. Use ONLY for test data. NOT recoverable.`}
+                            />
+                          )
                         ) : null}
                       </div>
                     </Td>
