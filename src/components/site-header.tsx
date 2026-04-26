@@ -31,7 +31,7 @@ export async function SiteHeader() {
           <NavLink href="/discover">Events</NavLink>
           <NavLink href="/genres">Genres</NavLink>
           <NavLink href="/cities">Cities</NavLink>
-          <NavLink href="/sell">For Organisers</NavLink>
+          <NavLink href="/sell">For organisers</NavLink>
         </nav>
 
         <div className="flex items-center gap-2">

@@ -57,7 +57,7 @@ export default function SellPage() {
             fee="5% + £0.50"
             tier1="Free events are free — always."
             tier2="Volume tiers drop to 3.5% + £0.40 over £50k/Q."
-            tier3="Per-promoter overrides — call us."
+            tier3="Per-organiser overrides for high-volume promoters — drop us a line."
             highlighted
           />
           <FeeCard

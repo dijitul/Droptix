@@ -22,7 +22,7 @@ export default function AboutPage() {
         <h2>What&rsquo;s different</h2>
         <ul>
           <li>
-            <strong>5% + 50p</strong>, not 12% + VAT. Volume tiers drop lower. Per-promoter overrides.
+            <strong>5% + £0.50</strong>, not 12% + VAT. Volume tiers drop lower. Per-organiser overrides.
           </li>
           <li>
             <strong>T+7 payouts</strong>, not 30 days. Faster for trusted promoters.

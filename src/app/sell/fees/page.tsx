@@ -50,9 +50,9 @@ export default function FeesPage() {
               transfers to your connected bank account (1–2 business days to clear).
             </p>
             <p>
-              After <strong>3 successful events</strong>, trusted promoters can switch to{' '}
-              <strong className="text-primary">T+48h</strong>. Optional instant payouts available on
-              request at a slightly higher commission to cover chargeback risk.
+              After <strong>3 successful events</strong>, trusted promoters switch to{' '}
+              <strong className="text-primary">T+48h</strong>. Faster payouts available for high-volume
+              promoters &mdash; talk to us about it.
             </p>
           </Section>
 

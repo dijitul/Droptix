@@ -34,7 +34,7 @@ export default async function CheckEmailPage({
         Not there? Check spam or your Promotions tab &mdash; some clients hide new senders. Still
         nothing?{' '}
         <Link href="/login" className="text-primary underline">
-          Try again
+          Send another
         </Link>
         .
       </p>

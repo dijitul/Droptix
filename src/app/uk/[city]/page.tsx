@@ -20,7 +20,11 @@ function unslugify(slug: string): string {
 }
 
 async function loadCity(citySlug: string) {
-  const cityName = unslugify(citySlug);
+  // Prefer canonical City row; fall back to derived city name from venues so
+  // the page works for both seeded cities and ad-hoc venue cities.
+  const cityRow = await db.city.findUnique({ where: { slug: citySlug } });
+  const cityName = cityRow?.name ?? unslugify(citySlug);
+
   const events = await db.event.findMany({
     where: {
       status: 'ON_SALE',
@@ -42,7 +46,10 @@ async function loadCity(citySlug: string) {
     },
   });
 
-  return { cityName, events };
+  // If the city is in our canonical list it's a "real" city — render the page
+  // even with zero events. If it's not canonical AND has zero events, treat
+  // as 404 (random slug).
+  return { cityName, events, canonical: Boolean(cityRow) };
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
@@ -62,11 +69,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function CityHub({ params }: { params: Promise<Params> }) {
   const { city } = await params;
-  const { cityName, events } = await loadCity(city);
+  const { cityName, events, canonical } = await loadCity(city);
 
-  if (events.length === 0) {
-    // If we truly have no events for the city slug, 404. We keep the city
-    // hub indexed only when there's real inventory to avoid thin pages.
+  // Random slugs (not in City table, no venue match) → 404. Canonical
+  // cities render even when empty so the URL works for early SEO + press.
+  if (events.length === 0 && !canonical) {
     notFound();
   }
 
@@ -105,9 +112,22 @@ export default async function CityHub({ params }: { params: Promise<Params> }) {
             Music events in<br />{cityName}
           </h1>
           <p className="max-w-prose text-lg text-on-surface-variant">
-            {events.length} upcoming {events.length === 1 ? 'event' : 'events'} across{' '}
-            {genreMap.size} {genreMap.size === 1 ? 'genre' : 'genres'}. Tickets for gigs, club nights,
-            and festivals in {cityName} — direct from independent promoters.
+            {events.length === 0 ? (
+              <>
+                No live events in {cityName} yet &mdash; first drops landing soon. Run nights
+                here?{' '}
+                <Link href="/sell" className="text-primary underline">
+                  Put your show on Droptix
+                </Link>
+                {' '}and own the city.
+              </>
+            ) : (
+              <>
+                {events.length} upcoming {events.length === 1 ? 'event' : 'events'} across{' '}
+                {genreMap.size} {genreMap.size === 1 ? 'genre' : 'genres'}. Tickets for gigs, club nights,
+                and festivals in {cityName} — direct from independent promoters.
+              </>
+            )}
           </p>
 
           {genreMap.size > 0 && (
@@ -125,6 +145,14 @@ export default async function CityHub({ params }: { params: Promise<Params> }) {
 
         <div className="tech-divider my-8" aria-hidden="true" />
 
+        {events.length === 0 ? (
+          <div className="border-2 border-dashed border-outline-variant p-10 text-center text-muted-foreground">
+            <p className="mb-4">Nothing on sale here right now.</p>
+            <Button asChild variant="outline">
+              <Link href="/cities">Browse other UK cities</Link>
+            </Button>
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {events.map((e) => {
             const cheapest = e.ticketTypes[0];
@@ -145,12 +173,15 @@ export default async function CityHub({ params }: { params: Promise<Params> }) {
             );
           })}
         </div>
+        )}
 
-        <div className="mt-16 flex justify-center">
-          <Button asChild variant="outline">
-            <Link href="/cities">← Other UK cities</Link>
-          </Button>
-        </div>
+        {events.length > 0 && (
+          <div className="mt-16 flex justify-center">
+            <Button asChild variant="outline">
+              <Link href="/cities">← Other UK cities</Link>
+            </Button>
+          </div>
+        )}
       </main>
     </>
   );

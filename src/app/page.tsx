@@ -38,12 +38,15 @@ export default async function HomePage() {
           <Badge variant="tech" className="mb-6">
             Droptix · UK live music
           </Badge>
-          <h1 className="text-display-xl uppercase max-w-[22ch]">
-            UK Gig, Club Nights and Event Tickets, direct from the Promoters.
-          </h1>
-          <p className="mt-5 font-display text-xl font-bold uppercase tracking-tight text-primary">
-            Tickets for the events that matter.
+          {/* Single H1 for SEO/a11y. The brand line is the H1 (it's the
+              identity); the descriptive headline becomes a lede paragraph
+              right above it so it still reads first. */}
+          <p className="font-display text-2xl font-bold uppercase tracking-tight text-on-surface-variant max-w-[24ch] md:text-3xl">
+            UK Gigs, Club Nights and Event Tickets, direct from the Promoters.
           </p>
+          <h1 className="mt-3 text-display-xl uppercase text-primary max-w-[20ch]">
+            Tickets for the events that matter.
+          </h1>
           <p className="mt-6 max-w-prose text-lg text-on-surface-variant">
             Independent UK Gigs, Club Nights, Festivals and everything in between. Fairer Fees,
             Faster Payouts and tickets, built by people who care about the Independent scene.
@@ -156,7 +159,7 @@ export default async function HomePage() {
 
               <ComparisonCell highlight>5% + £0.50<br /><small>Droptix</small></ComparisonCell>
               <ComparisonCell highlight>7 days<br /><small>Droptix</small></ComparisonCell>
-              <ComparisonCell highlight>Instant buy<br /><small>Droptix</small></ComparisonCell>
+              <ComparisonCell highlight>No queue page<br /><small>Droptix</small></ComparisonCell>
             </dl>
           </div>
         </div>

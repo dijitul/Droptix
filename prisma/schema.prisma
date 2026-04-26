@@ -256,6 +256,7 @@ model OrganiserMember {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organiserId, userId])
+  @@index([userId])
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -443,6 +444,7 @@ model Event {
   images      EventImage[]
 
   @@index([status, startsAt])
+  @@index([status, publishedAt, startsAt])  // /discover homepage query — most-hit
   @@index([organiserId])
   @@index([venueId])
   @@index([startsAt])
@@ -486,6 +488,7 @@ model TicketType {
   tickets    Ticket[]
 
   @@index([eventId])
+  @@index([eventId, unlockCode])    // unlock-code redemption lookup
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -533,6 +536,9 @@ model Order {
   @@index([eventId])
   @@index([status])
   @@index([buyerEmail])
+  @@index([buyerEmail, createdAt])      // /account/orders: guest history sort
+  @@index([status, paidAt])             // payout cron: paid orders past hold window
+  @@index([eventId, status, paidAt])    // org dashboard: per-event revenue + recent
 }
 
 model OrderItem {
@@ -549,6 +555,7 @@ model OrderItem {
   tickets    Ticket[]
 
   @@index([orderId])
+  @@index([ticketTypeId])         // ticket-type usage / sales aggregates
 }
 
 model Ticket {
@@ -586,6 +593,10 @@ model Ticket {
   @@index([eventId, status])
   @@index([holderUserId])
   @@index([holderEmail])
+  @@index([holderEmail, issuedAt])      // /account/tickets sort by issued
+  @@index([eventId, holderEmail])       // door-lookup: search guest by email at the door
+  @@index([ticketTypeId])               // per-type sales counts
+  @@index([orderItemId])                // order-item → tickets join
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -610,6 +621,7 @@ model ScanEvent {
   scannerCrew  ScannerCrew?  @relation(fields: [scannerCrewId], references: [id], onDelete: SetNull)
 
   @@index([ticketId])
+  @@index([ticketId, status])           // audit "all ACCEPTED scans for this ticket"
   @@index([eventId, scannedAt])
   @@index([scannerCrewId])
 }
@@ -653,6 +665,7 @@ model Refund {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([createdAt])           // admin refunds queue: order-by-date
 }
 
 model Payout {
@@ -734,6 +747,7 @@ model WebhookEvent {
   @@unique([provider, externalId])
   @@index([eventType])
   @@index([processedAt])
+  @@index([processedAt, failedAttempts, createdAt])  // retry sweep targets unprocessed first
 }
 
 model Wishlist {
