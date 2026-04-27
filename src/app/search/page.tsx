@@ -6,7 +6,7 @@ import { EventCard } from '@/components/event-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { Currency } from '@prisma/client';
+import type { Currency, EventStatus } from '@prisma/client';
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -54,8 +54,10 @@ export default async function SearchPage({
 
   // Build the event WHERE clause. Each filter narrows AND-style; the
   // text query OR's across title/subtitle/description.
+  const liveStatuses: EventStatus[] = ['ON_SALE', 'SCHEDULED', 'SOLD_OUT'];
+
   const eventWhere = {
-    status: { in: ['ON_SALE', 'SCHEDULED', 'SOLD_OUT'] as const },
+    status: { in: liveStatuses },
     publishedAt: { not: null },
     startsAt: { gte: new Date() },
     ...(q
@@ -138,7 +140,7 @@ export default async function SearchPage({
         where: {
           events: {
             some: {
-              status: { in: ['ON_SALE', 'SCHEDULED', 'SOLD_OUT'] },
+              status: { in: liveStatuses },
               startsAt: { gte: new Date() },
               publishedAt: { not: null },
             },
