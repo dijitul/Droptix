@@ -3,6 +3,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { db } from './db';
 import { env } from '@/lib/env';
 import { sendMail } from './mail';
+import { BRAND, emailLayout } from './emails/_layout';
 
 /**
  * Auth.js v5 — magic-link only, no passwords.
@@ -38,26 +39,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       type: 'email',
       maxAge: 15 * 60, // 15 min — tighter than default 24h for security
       sendVerificationRequest: async ({ identifier, url }) => {
-        // Keep copy short + UK-native; full HTML template lives under
-        // src/emails/magic-link.tsx when we adopt react-email in Phase 1.
+        // Industrial-brand magic link. The CTA URL has nothing
+        // user-facing in it (token, callback) so we don't escape it
+        // for display, only as an href.
+        const bodyHtml = `
+          <div style="font-family:'JetBrains Mono', ui-monospace, monospace; font-size:11px; color:${BRAND.primary}; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">
+            Magic link · valid 15 minutes
+          </div>
+          <h1 style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size:28px; font-weight:800; line-height:1.15; color:${BRAND.onSurface}; margin:0 0 16px; letter-spacing:-0.3px;">
+            Sign in to Droptix
+          </h1>
+          <p style="margin:0 0 8px; font-size:15px; line-height:1.6; color:${BRAND.onSurfaceVariant};">
+            Tap the button below to sign in. The link works once and expires in 15 minutes — if it
+            does, just request another from the sign-in page.
+          </p>
+          <p style="margin:24px 0 0; font-size:12px; line-height:1.6; color:${BRAND.onSurfaceVariant};">
+            Didn&rsquo;t ask for this? Ignore the email — nothing happens until you click.
+          </p>
+        `;
+
         await sendMail({
           to: { email: identifier },
           subject: 'Sign in to Droptix',
           textBody: [
-            'Tap the link below to sign in to Droptix. It expires in 15 minutes.',
+            'Sign in to Droptix',
+            '',
+            'Tap the link below to sign in. It expires in 15 minutes.',
             '',
             url,
             '',
-            "If you didn't ask for this, ignore the email — nothing will happen.",
+            "Didn't ask for this? Ignore the email — nothing will happen.",
           ].join('\n'),
-          htmlBody: `
-            <div style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #0B0B12;">
-              <h1 style="font-size: 24px; font-weight: 600; margin: 0 0 16px;">Sign in to Droptix</h1>
-              <p style="margin: 0 0 24px; color: #5B5B66;">Tap the button to sign in. This link expires in 15 minutes.</p>
-              <a href="${url}" style="display: inline-block; background: #6D28D9; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 500;">Sign in</a>
-              <p style="margin: 32px 0 0; color: #5B5B66; font-size: 12px;">Didn't ask for this? Ignore the email.</p>
-            </div>
-          `,
+          htmlBody: emailLayout({
+            preheader: 'Your Droptix sign-in link — expires in 15 minutes.',
+            bodyHtml,
+            appUrl: env.NEXT_PUBLIC_APP_URL,
+            cta: { label: 'Sign in', href: url },
+          }),
         });
       },
       server: '', // unused — we sendMail() directly

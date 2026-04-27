@@ -4,21 +4,27 @@ import { env } from '@/lib/env';
 import { Money } from '@/lib/money';
 import type { Currency } from '@prisma/client';
 import { formatLongDate, formatEventTime } from '@/lib/format';
+import { BRAND, emailLayout, escapeHtml, metaRow } from './_layout';
 
 /**
  * Send an order-confirmation email with links to every ticket.
- * Plain HTML + plain text — no client-side tracking, no open tracking
- * (we don't need 0.2% CTR uplift at the cost of privacy trust).
  *
- * Called from the `email.send` BullMQ queue. See `src/server/workers`
- * (Phase 0d will add the worker entry file that wires this up).
+ * Industrial-brand HTML using the shared `_layout` shell. Includes
+ * the event hero image (served from /api/images/[id], so any image
+ * blocker fails gracefully to alt text). Plain-text fallback is
+ * always sent so spam filters and screen readers see proper content.
  */
-
 export async function sendOrderConfirmation(orderId: string): Promise<void> {
   const order = await db.order.findUnique({
     where: { id: orderId },
     include: {
-      event: { include: { venue: true, organiser: true } },
+      event: {
+        include: {
+          venue: true,
+          organiser: { select: { name: true, slug: true } },
+          heroImage: { select: { id: true } },
+        },
+      },
       tickets: { include: { ticketType: true } },
     },
   });
@@ -26,65 +32,131 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
   if (order.status !== 'PAID') return; // belt + braces
 
   const total = Money.fromMinor(order.totalAmount, order.currency as Currency).format();
-  const dateStr = `${formatLongDate(order.event.startsAt)} · Doors ${formatEventTime(order.event.doorsOpenAt ?? order.event.startsAt)}`;
+  const dateLong = formatLongDate(order.event.startsAt);
+  const doorsTime = formatEventTime(order.event.doorsOpenAt ?? order.event.startsAt);
+  const heroUrl = order.event.heroImage
+    ? `${env.NEXT_PUBLIC_APP_URL}/api/images/${order.event.heroImage.id}`
+    : null;
+  const eventUrl = `${env.NEXT_PUBLIC_APP_URL}/events/${order.event.slug}`;
 
-  const ticketLinks = order.tickets
+  // Hero block: render absolute URL + descriptive alt so when the
+  // user's mail client blocks images, the alt explains the email.
+  const heroHtml = heroUrl
+    ? `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:24px;">
+      <tr>
+        <td style="background:${BRAND.surface}; border:2px solid ${BRAND.outlineVariant}; padding:0; line-height:0;">
+          <a href="${eventUrl}" style="display:block; text-decoration:none;">
+            <img
+              src="${heroUrl}"
+              alt="${escapeHtml(order.event.title)} — ${escapeHtml(dateLong)}"
+              width="552"
+              style="display:block; width:100%; max-width:552px; height:auto; border:0;"
+            />
+          </a>
+        </td>
+      </tr>
+    </table>`
+    : '';
+
+  // Tickets table — each row links to the per-ticket QR page on the site.
+  const ticketRows = order.tickets
     .map(
       (t) => `
         <tr>
-          <td style="padding: 12px 0; border-top: 1px solid #E6E6EC;">
-            <div style="font-weight: 600;">${escape(t.ticketType.name)}</div>
-            <div style="font-family: ui-monospace, monospace; font-size: 14px; color: #5B5B66;">${t.doorCode}</div>
+          <td style="padding:16px 0; border-top:1px solid ${BRAND.outlineVariant};">
+            <div style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size:15px; font-weight:700; color:${BRAND.onSurface}; margin-bottom:4px;">
+              ${escapeHtml(t.ticketType.name)}
+            </div>
+            <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size:13px; color:${BRAND.tertiary}; letter-spacing:1.5px;">
+              ${escapeHtml(t.doorCode)}
+            </div>
           </td>
-          <td style="padding: 12px 0; border-top: 1px solid #E6E6EC; text-align: right;">
-            <a href="${env.NEXT_PUBLIC_APP_URL}/tickets/${t.id}" style="color: #6D28D9; text-decoration: none; font-weight: 500;">View ticket →</a>
+          <td align="right" style="padding:16px 0; border-top:1px solid ${BRAND.outlineVariant}; vertical-align:middle;">
+            <a
+              href="${env.NEXT_PUBLIC_APP_URL}/tickets/${t.id}"
+              style="display:inline-block; padding:8px 14px; border:1.5px solid ${BRAND.primary}; color:${BRAND.primary}; text-decoration:none; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase;"
+            >
+              View ticket →
+            </a>
           </td>
         </tr>`,
     )
     .join('');
 
-  const htmlBody = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0B0B12;">
-      <div style="background: #6D28D9; color: #fff; padding: 20px 24px; border-radius: 14px 14px 0 0;">
-        <div style="font-size: 14px; opacity: 0.9;">You're in.</div>
-        <div style="font-size: 22px; font-weight: 600; margin-top: 4px;">${escape(order.event.title)}</div>
-      </div>
-      <div style="background: #fff; border: 1px solid #E6E6EC; border-top: 0; border-radius: 0 0 14px 14px; padding: 24px;">
-        <div style="color: #5B5B66; font-size: 14px; margin-bottom: 8px;">${escape(dateStr)}</div>
-        ${order.event.venue ? `<div style="font-weight: 500; margin-bottom: 20px;">${escape(order.event.venue.name)}, ${escape(order.event.venue.city)}</div>` : ''}
+  const venueLine = order.event.venue
+    ? `${escapeHtml(order.event.venue.name)}, ${escapeHtml(order.event.venue.city)}`
+    : 'Venue: TBA';
 
-        <table style="width: 100%; border-collapse: collapse;">${ticketLinks}</table>
+  const bodyHtml = `
+    ${heroHtml}
 
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #E6E6EC; font-size: 14px;">
-          <div style="display: flex; justify-content: space-between; color: #5B5B66;">
-            <span>Booking reference</span>
-            <span style="font-family: ui-monospace, monospace; color: #0B0B12;">${order.reference}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-weight: 600;">
-            <span>Total paid</span>
-            <span>${total}</span>
-          </div>
-        </div>
-      </div>
-      <div style="color: #5B5B66; font-size: 12px; margin-top: 16px; text-align: center;">
-        Organiser: ${escape(order.event.organiser.name)} · Tickets via <a href="${env.NEXT_PUBLIC_APP_URL}" style="color: #6D28D9;">Droptix</a>
+    <div style="font-family:'JetBrains Mono', ui-monospace, monospace; font-size:11px; color:${BRAND.primary}; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">
+      Confirmed · You're in
+    </div>
+    <h1 style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size:28px; font-weight:800; line-height:1.15; color:${BRAND.onSurface}; margin:0 0 24px; letter-spacing:-0.3px;">
+      ${escapeHtml(order.event.title)}
+    </h1>
+
+    ${metaRow('Date', escapeHtml(dateLong))}
+    ${metaRow('Doors', escapeHtml(doorsTime))}
+    ${metaRow('Venue', venueLine)}
+    ${metaRow('Promoter', escapeHtml(order.event.organiser.name))}
+
+    <div style="margin:28px 0 12px; padding-top:16px; border-top:2px solid ${BRAND.outlineVariant};">
+      <div style="font-family:'JetBrains Mono', ui-monospace, monospace; font-size:11px; color:${BRAND.tertiary}; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">
+        ${order.tickets.length} × Ticket
       </div>
     </div>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+      ${ticketRows}
+    </table>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px; padding-top:16px; border-top:2px solid ${BRAND.outlineVariant};">
+      <tr>
+        <td style="font-family:'JetBrains Mono', ui-monospace, monospace; font-size:12px; color:${BRAND.onSurfaceVariant}; letter-spacing:1px;">
+          REF · ${escapeHtml(order.reference)}
+        </td>
+        <td align="right" style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size:18px; font-weight:800; color:${BRAND.primary};">
+          ${escapeHtml(total)}
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:24px 0 0; font-size:13px; line-height:1.6; color:${BRAND.onSurfaceVariant};">
+      Save this email or your ticket page — the QR code on the door is
+      what gets you in. Need help? Reply to this email or hit the
+      Support link below and we&rsquo;ll be on it.
+    </p>
   `;
+
+  const htmlBody = emailLayout({
+    preheader: `Your tickets to ${order.event.title} on ${dateLong}`,
+    bodyHtml,
+    appUrl: env.NEXT_PUBLIC_APP_URL,
+    cta: { label: 'View all my tickets', href: `${env.NEXT_PUBLIC_APP_URL}/account/tickets` },
+  });
 
   const textBody = [
     `You're in — ${order.event.title}`,
     '',
-    dateStr,
-    order.event.venue ? `${order.event.venue.name}, ${order.event.venue.city}` : '',
+    `Date:    ${dateLong}`,
+    `Doors:   ${doorsTime}`,
+    order.event.venue
+      ? `Venue:   ${order.event.venue.name}, ${order.event.venue.city}`
+      : 'Venue:   TBA',
+    `Promoter: ${order.event.organiser.name}`,
     '',
     'Your tickets:',
-    ...order.tickets.map((t) => `  · ${t.ticketType.name} — ${t.doorCode} — ${env.NEXT_PUBLIC_APP_URL}/tickets/${t.id}`),
+    ...order.tickets.map(
+      (t) => `  · ${t.ticketType.name} — ${t.doorCode} — ${env.NEXT_PUBLIC_APP_URL}/tickets/${t.id}`,
+    ),
     '',
     `Reference: ${order.reference}`,
     `Total paid: ${total}`,
     '',
-    `Organiser: ${order.event.organiser.name}`,
+    `All your tickets: ${env.NEXT_PUBLIC_APP_URL}/account/tickets`,
     `Tickets via Droptix — ${env.NEXT_PUBLIC_APP_URL}`,
   ].join('\n');
 
@@ -94,13 +166,4 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
     htmlBody,
     textBody,
   });
-}
-
-function escape(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }

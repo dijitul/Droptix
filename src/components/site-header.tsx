@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { Search } from 'lucide-react';
 import { DroptixMark } from './droptix-mark';
 import { UserMenu } from './user-menu';
 import { MobileMenu } from './mobile-menu';
+import { HeaderSearch } from './header-search';
 import { auth } from '@/server/auth';
 
 /**
@@ -37,6 +39,17 @@ export async function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* xl+: inline input. lg-only: icon link to /search.
+              below lg: search lives inside the mobile menu. */}
+          <HeaderSearch variant="header" />
+          <Link
+            href="/search"
+            aria-label="Search"
+            className="hidden h-10 w-10 items-center justify-center border-2 border-outline-variant text-foreground hover:border-primary hover:text-primary lg:inline-flex xl:hidden"
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
+          </Link>
+
           {isAuthed ? (
             <UserMenu />
           ) : (
@@ -54,7 +67,7 @@ export async function SiteHeader() {
             Buy tickets
           </Link>
           {/* The MobileMenu is a client component — it owns the hamburger
-              button + the slide-down panel. Below md only. */}
+              button + the slide-down panel. Below lg only. */}
           <MobileMenu isAuthed={isAuthed} />
         </div>
       </div>

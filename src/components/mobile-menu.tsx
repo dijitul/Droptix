@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
+import { HeaderSearch } from './header-search';
 
 /**
  * Mobile hamburger menu.
@@ -84,6 +85,8 @@ export function MobileMenu({ isAuthed }: { isAuthed: boolean }) {
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
+
+        <HeaderSearch variant="menu" />
 
         <nav aria-label="Mobile primary" className="flex flex-col gap-1">
           <MobileLink href="/discover">Events</MobileLink>
