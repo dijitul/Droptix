@@ -199,6 +199,13 @@ export default async function EventPage({ params }: { params: Promise<Params> })
                 remaining: tt.capacity - tt.soldCount - tt.reservedCount,
                 minPerOrder: tt.minPerOrder,
                 maxPerOrder: tt.maxPerOrder,
+                // Serialise the sales window + pause flag so the client
+                // can compute "is available now" + render disabled-row
+                // copy. Server still re-checks at checkout time, this
+                // is just the UX guard.
+                isPaused: tt.isPaused,
+                salesStartAt: tt.salesStartAt?.toISOString() ?? null,
+                salesEndAt: tt.salesEndAt?.toISOString() ?? null,
               }))}
               cheapestFormatted={
                 cheapest

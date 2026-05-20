@@ -475,10 +475,11 @@ model TicketType {
   reservedCount   Int      @default(0)
   maxPerOrder     Int      @default(10)
   minPerOrder     Int      @default(1)
-  salesStartAt    DateTime?
-  salesEndAt      DateTime?
+  salesStartAt    DateTime?                       // sales open at (London local stored as UTC)
+  salesEndAt      DateTime?                       // sales close at (e.g. early-bird cutoff)
   position        Int      @default(0)
-  isHidden        Boolean  @default(false)  // codes/unlocks only
+  isPaused        Boolean  @default(false)        // manual organiser pause — independent of dates
+  isHidden        Boolean  @default(false)        // codes/unlocks only
   unlockCode      String?  @db.VarChar(255)       // optional access code
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

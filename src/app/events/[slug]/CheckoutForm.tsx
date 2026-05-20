@@ -19,7 +19,41 @@ type TicketTypeView = {
   remaining: number;
   minPerOrder: number;
   maxPerOrder: number;
+  // Sales window + manual pause. All three optional / nullable.
+  isPaused: boolean;
+  salesStartAt: string | null;   // ISO UTC
+  salesEndAt: string | null;     // ISO UTC
 };
+
+type Availability =
+  | { available: true }
+  | { available: false; reason: string; tone: 'paused' | 'scheduled' | 'ended' | 'soldout' };
+
+function availability(t: TicketTypeView): Availability {
+  if (t.isPaused) return { available: false, reason: 'Sales paused', tone: 'paused' };
+  if (t.salesStartAt) {
+    const start = new Date(t.salesStartAt);
+    if (!Number.isNaN(start.getTime()) && start > new Date()) {
+      const when = start.toLocaleString('en-GB', {
+        timeZone: 'Europe/London',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      return { available: false, reason: `Sales open ${when}`, tone: 'scheduled' };
+    }
+  }
+  if (t.salesEndAt) {
+    const end = new Date(t.salesEndAt);
+    if (!Number.isNaN(end.getTime()) && end < new Date()) {
+      return { available: false, reason: 'Sales ended', tone: 'ended' };
+    }
+  }
+  if (t.remaining <= 0) return { available: false, reason: 'Sold out', tone: 'soldout' };
+  return { available: true };
+}
 
 type CommissionRuleView = {
   percentageBps: number;
@@ -37,7 +71,12 @@ export function CheckoutForm({
   cheapestFormatted: string | null;
   commissionRule: CommissionRuleView | null;
 }) {
-  const firstAvailable = ticketTypes.find((t) => t.remaining > 0) ?? ticketTypes[0];
+  // Pick the first ticket type that's actually buyable right now.
+  // Falls back to the first one in the list so the UI doesn't go
+  // empty when everything's paused/sold out — the disabled state
+  // still renders so users can see what was on offer.
+  const firstAvailable =
+    ticketTypes.find((t) => availability(t).available) ?? ticketTypes[0];
   const [selectedId, setSelectedId] = useState(firstAvailable?.id ?? '');
   const [quantity, setQuantity] = useState(1);
   const [isPending, startTransition] = useTransition();
@@ -96,7 +135,8 @@ export function CheckoutForm({
   }
 
   const max = Math.min(selected.maxPerOrder, Math.max(selected.remaining, 1));
-  const canBuy = selected.remaining > 0 && !isPending;
+  const selectedAvail = availability(selected);
+  const canBuy = selectedAvail.available && !isPending;
 
   return (
     <form action={onSubmit} className="flex flex-col gap-5">
@@ -118,29 +158,39 @@ export function CheckoutForm({
       >
         {ticketTypes.map((tt) => {
           const price = Money.fromMinor(BigInt(tt.priceFaceValue), tt.currency);
-          const remaining = tt.remaining;
-          const soldOut = remaining <= 0;
-          const lowStock = !soldOut && remaining < 10;
+          const avail = availability(tt);
+          const lowStock = avail.available && tt.remaining < 10;
+          const disabled = !avail.available;
           return (
             <label
               key={tt.id}
               htmlFor={`tt-${tt.id}`}
               className={[
                 'flex cursor-pointer items-start justify-between gap-3 border-2 p-4 transition-colors',
-                selectedId === tt.id
+                selectedId === tt.id && !disabled
                   ? 'border-primary bg-primary/10'
                   : 'border-outline-variant hover:bg-surface-container-high',
-                soldOut && 'cursor-not-allowed opacity-60',
+                disabled && 'cursor-not-allowed opacity-60',
               ].filter(Boolean).join(' ')}
             >
               <div className="flex items-start gap-3">
-                <RadioGroupItem id={`tt-${tt.id}`} value={tt.id} disabled={soldOut} className="mt-0.5" />
+                <RadioGroupItem id={`tt-${tt.id}`} value={tt.id} disabled={disabled} className="mt-0.5" />
                 <div>
                   <div className="font-medium">{tt.name}</div>
-                  {soldOut ? (
-                    <div className="text-xs text-muted-foreground">Sold out</div>
+                  {!avail.available ? (
+                    <div
+                      className={
+                        avail.tone === 'paused' || avail.tone === 'ended'
+                          ? 'text-xs text-warning'
+                          : avail.tone === 'soldout'
+                          ? 'text-xs text-muted-foreground'
+                          : 'text-xs text-tertiary'
+                      }
+                    >
+                      {avail.reason}
+                    </div>
                   ) : lowStock ? (
-                    <div className="text-xs text-warning">Only {remaining} left</div>
+                    <div className="text-xs text-warning">Only {tt.remaining} left</div>
                   ) : null}
                 </div>
               </div>
@@ -248,8 +298,8 @@ export function CheckoutForm({
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             Securing your tickets…
           </>
-        ) : selected.remaining <= 0 ? (
-          'Sold out'
+        ) : !selectedAvail.available ? (
+          selectedAvail.reason
         ) : feeBreakdown ? (
           `Pay ${feeBreakdown.total}`
         ) : (

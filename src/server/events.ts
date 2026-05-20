@@ -188,6 +188,111 @@ export async function addTicketType(eventId: string, formData: FormData): Promis
   revalidatePath(`/organiser/events/${eventId}/edit`);
 }
 
+/**
+ * Update an existing ticket type. Anything the organiser can edit
+ * post-creation lives here: name, capacity, max-per-order, the sales
+ * window, and the manual pause toggle. Price is also editable but
+ * only when nothing's been sold — otherwise we'd have to deal with
+ * mid-flight price changes between cart and checkout, which is a
+ * different feature.
+ */
+export async function updateTicketType(
+  eventId: string,
+  ticketTypeId: string,
+  formData: FormData,
+): Promise<void> {
+  await assertOrganiserOwns(eventId);
+  const tt = await db.ticketType.findFirst({ where: { id: ticketTypeId, eventId } });
+  if (!tt) throw new Error('Ticket type not found.');
+
+  const name = String(formData.get('name') ?? tt.name).trim();
+  const priceMajor = String(formData.get('price') ?? '').trim();
+  const capacity = Number(formData.get('capacity') ?? tt.capacity);
+  const maxPerOrder = Number(formData.get('maxPerOrder') ?? tt.maxPerOrder);
+  const salesStartAtInput = String(formData.get('salesStartAt') ?? '').trim();
+  const salesEndAtInput = String(formData.get('salesEndAt') ?? '').trim();
+  // Checkbox <input type=checkbox name=isPaused>: 'on' when ticked.
+  const isPaused = formData.get('isPaused') === 'on';
+
+  if (!name) throw new Error('Ticket type needs a name.');
+  if (!Number.isInteger(capacity) || capacity < 1) {
+    throw new Error('Capacity must be a positive integer.');
+  }
+  if (capacity < tt.soldCount) {
+    throw new Error(
+      `Can't drop capacity below sold count (${tt.soldCount}). Refund or void some tickets first.`,
+    );
+  }
+  if (!Number.isInteger(maxPerOrder) || maxPerOrder < 1) {
+    throw new Error('Max-per-order must be a positive integer.');
+  }
+
+  let priceMinor: bigint = tt.priceFaceValue;
+  if (priceMajor) {
+    if (!/^-?\d+(\.\d{1,2})?$/.test(priceMajor)) throw new Error('Bad price format.');
+    const [wholeStr, fractionStr = '00'] = priceMajor.split('.');
+    const newPriceMinor =
+      BigInt(wholeStr ?? '0') * 100n + BigInt(fractionStr.padEnd(2, '0').slice(0, 2));
+    // Compare BigInts directly — no Money import needed, and this is
+    // safer than string comparison (which trips on "10" vs "10.00").
+    if (tt.soldCount > 0 && newPriceMinor !== tt.priceFaceValue) {
+      throw new Error("Can't change price after tickets are sold. Create a new type instead.");
+    }
+    priceMinor = newPriceMinor;
+  }
+
+  // datetime-local inputs come back as YYYY-MM-DDTHH:mm. Empty = clear.
+  // Use London-local parser so 18:00 means 18:00 UK time year-round.
+  const salesStartAt = salesStartAtInput ? parseLondonLocal(salesStartAtInput) : null;
+  const salesEndAt = salesEndAtInput ? parseLondonLocal(salesEndAtInput) : null;
+  if (salesStartAt && Number.isNaN(salesStartAt.getTime())) {
+    throw new Error('Sales start date is invalid.');
+  }
+  if (salesEndAt && Number.isNaN(salesEndAt.getTime())) {
+    throw new Error('Sales end date is invalid.');
+  }
+  if (salesStartAt && salesEndAt && salesStartAt >= salesEndAt) {
+    throw new Error('Sales end must be after sales start.');
+  }
+
+  await db.ticketType.update({
+    where: { id: ticketTypeId },
+    data: {
+      name,
+      priceFaceValue: priceMinor,
+      capacity,
+      maxPerOrder,
+      salesStartAt,
+      salesEndAt,
+      isPaused,
+    },
+  });
+
+  revalidatePath(`/organiser/events/${eventId}/edit`);
+  revalidatePath(`/events`);
+}
+
+/**
+ * Quick-toggle for the manual pause flag. Used by the inline
+ * "Pause sales" / "Resume sales" button on the edit page so an
+ * organiser can flip an early-bird off in one click without
+ * re-saving the full ticket-type form.
+ */
+export async function setTicketTypePaused(
+  eventId: string,
+  ticketTypeId: string,
+  paused: boolean,
+): Promise<void> {
+  await assertOrganiserOwns(eventId);
+  const tt = await db.ticketType.findFirst({ where: { id: ticketTypeId, eventId } });
+  if (!tt) throw new Error('Ticket type not found.');
+  await db.ticketType.update({
+    where: { id: ticketTypeId },
+    data: { isPaused: paused },
+  });
+  revalidatePath(`/organiser/events/${eventId}/edit`);
+}
+
 export async function deleteTicketType(eventId: string, ticketTypeId: string): Promise<void> {
   await assertOrganiserOwns(eventId);
   const tt = await db.ticketType.findFirst({ where: { id: ticketTypeId, eventId } });

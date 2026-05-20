@@ -1,9 +1,15 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, Pause, Play } from 'lucide-react';
 import { requireOrganiser } from '@/server/guards';
 import { db } from '@/server/db';
-import { updateEvent, addTicketType, deleteTicketType } from '@/server/events';
+import {
+  updateEvent,
+  addTicketType,
+  deleteTicketType,
+  updateTicketType,
+  setTicketTypePaused,
+} from '@/server/events';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -181,29 +187,159 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
             {event.ticketTypes.length === 0 ? (
               <p className="text-sm text-muted-foreground">No ticket types yet. Add your first below.</p>
             ) : (
-              <ul className="flex flex-col divide-y divide-outline-variant/60">
-                {event.ticketTypes.map((tt) => (
-                  <li key={tt.id} className="flex items-center justify-between gap-3 py-3">
-                    <div>
-                      <div className="font-medium">{tt.name}</div>
-                      <div className="label-tech text-muted-foreground">
-                        {Money.fromMinor(tt.priceFaceValue, tt.currency as Currency).format()} ·{' '}
-                        {tt.soldCount}/{tt.capacity} sold
-                      </div>
-                    </div>
-                    <form action={deleteTicketType.bind(null, event.id, tt.id)}>
-                      <Button
-                        type="submit"
-                        size="sm"
-                        variant="ghost"
-                        aria-label={`Delete ${tt.name}`}
-                        disabled={tt.soldCount > 0}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </form>
-                  </li>
-                ))}
+              <ul className="flex flex-col gap-3">
+                {event.ticketTypes.map((tt) => {
+                  // Convert BigInt minor pence → "12.00" string for the price input.
+                  const priceMajor = (Number(tt.priceFaceValue) / 100).toFixed(2);
+                  const now = new Date();
+                  const notYet = tt.salesStartAt && tt.salesStartAt > now;
+                  const ended = tt.salesEndAt && tt.salesEndAt < now;
+                  // Status pill summarises the four sales states clearly so
+                  // the organiser can glance the list without expanding rows.
+                  const status: { label: string; variant: 'success' | 'hazard' | 'destructive' | 'outline' } =
+                    tt.isPaused
+                      ? { label: 'Paused', variant: 'destructive' }
+                      : ended
+                      ? { label: 'Sales ended', variant: 'outline' }
+                      : notYet
+                      ? { label: 'Scheduled', variant: 'hazard' }
+                      : { label: 'On sale', variant: 'success' };
+
+                  return (
+                    <li key={tt.id}>
+                      <details className="group border-2 border-outline-variant bg-surface-container-low">
+                        <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 hover:bg-surface-container-high">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate font-medium">{tt.name}</span>
+                              <Badge variant={status.variant} className="shrink-0">{status.label}</Badge>
+                            </div>
+                            <div className="label-tech mt-1 text-muted-foreground">
+                              {Money.fromMinor(tt.priceFaceValue, tt.currency as Currency).format()} ·{' '}
+                              {tt.soldCount}/{tt.capacity} sold
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {/* Quick pause / resume toggle — no row expansion needed */}
+                            <form action={setTicketTypePaused.bind(null, event.id, tt.id, !tt.isPaused)}>
+                              <Button
+                                type="submit"
+                                size="sm"
+                                variant={tt.isPaused ? 'outline' : 'ghost'}
+                                aria-label={tt.isPaused ? `Resume ${tt.name} sales` : `Pause ${tt.name} sales`}
+                              >
+                                {tt.isPaused ? (
+                                  <Play className="h-4 w-4" aria-hidden="true" />
+                                ) : (
+                                  <Pause className="h-4 w-4" aria-hidden="true" />
+                                )}
+                                <span className="ml-1 hidden sm:inline">
+                                  {tt.isPaused ? 'Resume' : 'Pause'}
+                                </span>
+                              </Button>
+                            </form>
+                            <span aria-hidden="true" className="text-xs text-muted-foreground group-open:rotate-180">▾</span>
+                          </div>
+                        </summary>
+
+                        <ServerActionForm
+                          action={updateTicketType.bind(null, event.id, tt.id)}
+                          className="flex flex-col gap-3 border-t-2 border-outline-variant p-4"
+                          successMessage="Ticket type updated"
+                        >
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            <div className="col-span-2 sm:col-span-1">
+                              <Label htmlFor={`tt-${tt.id}-name`}>Name</Label>
+                              <Input id={`tt-${tt.id}-name`} name="name" defaultValue={tt.name} required />
+                            </div>
+                            <div>
+                              <Label htmlFor={`tt-${tt.id}-price`}>Price (£)</Label>
+                              <Input
+                                id={`tt-${tt.id}-price`}
+                                name="price"
+                                inputMode="decimal"
+                                defaultValue={priceMajor}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`tt-${tt.id}-cap`}>Capacity</Label>
+                              <Input
+                                id={`tt-${tt.id}-cap`}
+                                name="capacity"
+                                type="number"
+                                min={Math.max(1, tt.soldCount)}
+                                defaultValue={tt.capacity}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`tt-${tt.id}-max`}>Max per order</Label>
+                              <Input
+                                id={`tt-${tt.id}-max`}
+                                name="maxPerOrder"
+                                type="number"
+                                min={1}
+                                defaultValue={tt.maxPerOrder}
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                              <Label htmlFor={`tt-${tt.id}-start`}>
+                                Sales open <span className="text-muted-foreground">(optional)</span>
+                              </Label>
+                              <Input
+                                id={`tt-${tt.id}-start`}
+                                name="salesStartAt"
+                                type="datetime-local"
+                                defaultValue={tt.salesStartAt ? toLocalInput(tt.salesStartAt) : ''}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor={`tt-${tt.id}-end`}>
+                                Sales close <span className="text-muted-foreground">(optional, e.g. early-bird cutoff)</span>
+                              </Label>
+                              <Input
+                                id={`tt-${tt.id}-end`}
+                                name="salesEndAt"
+                                type="datetime-local"
+                                defaultValue={tt.salesEndAt ? toLocalInput(tt.salesEndAt) : ''}
+                              />
+                            </div>
+                          </div>
+
+                          <label className="inline-flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              name="isPaused"
+                              defaultChecked={tt.isPaused}
+                              className="h-4 w-4 accent-primary"
+                            />
+                            <span>Pause sales now (independent of the dates above)</span>
+                          </label>
+
+                          <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant pt-3">
+                            <Button type="submit" size="sm">Save changes</Button>
+                            <form action={deleteTicketType.bind(null, event.id, tt.id)}>
+                              <Button
+                                type="submit"
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Delete ${tt.name}`}
+                                disabled={tt.soldCount > 0}
+                                title={tt.soldCount > 0 ? "Can't delete — tickets sold" : 'Delete this type'}
+                              >
+                                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                              </Button>
+                            </form>
+                          </div>
+                        </ServerActionForm>
+                      </details>
+                    </li>
+                  );
+                })}
               </ul>
             )}
 

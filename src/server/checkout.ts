@@ -59,6 +59,19 @@ export async function createCheckoutSession(formData: FormData): Promise<void> {
   const event = ticketType.event;
   if (event.status !== 'ON_SALE') throw new Error('This event isn\'t on sale.');
 
+  // Sales window + manual pause checks. These mirror the buyer-facing
+  // CheckoutForm UI but are AUTHORITATIVE — a tampered form posting
+  // ticketTypeId for a paused/expired type gets refused here.
+  if (ticketType.isPaused) {
+    throw new Error('Sales for this ticket type are paused.');
+  }
+  if (ticketType.salesStartAt && ticketType.salesStartAt > new Date()) {
+    throw new Error('Sales for this ticket type haven\'t opened yet.');
+  }
+  if (ticketType.salesEndAt && ticketType.salesEndAt < new Date()) {
+    throw new Error('Sales for this ticket type have ended.');
+  }
+
   const remaining = ticketType.capacity - ticketType.soldCount - ticketType.reservedCount;
   if (remaining < quantity) {
     throw new Error(`Only ${remaining} left — try fewer.`);
