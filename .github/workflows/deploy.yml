@@ -35,7 +35,13 @@ jobs:
             git reset --hard origin/main
             pnpm install --frozen-lockfile --prod=false
             pnpm db:generate
-            pnpm db:migrate:deploy
+            # This project manages its schema with `prisma db push` (no
+            # prisma/migrations yet). `migrate deploy` errors P3005 against a
+            # db:push-created database. Use db:push here too — idempotent, and
+            # it refuses destructive changes without --accept-data-loss, so a
+            # schema change needing data loss fails loudly instead of silently.
+            # TODO: switch to `db:migrate:deploy` once we baseline migrations.
+            pnpm db:push
             pnpm build
             # Next.js `output: "standalone"` writes a self-contained server to
             # .next/standalone/server.js but does NOT copy the static asset
