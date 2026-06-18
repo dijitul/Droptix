@@ -128,7 +128,8 @@ enum FeeMode {
 
 enum IntegrationProvider {
   STRIPE
-  MAILGUN                 // primary transactional email (EU region)
+  SMTP2GO                 // primary transactional email (HTTP send API)
+  MAILGUN                 // deprecated — replaced by SMTP2GO; kept for back-compat
   POSTMARK                // retained for back-compat; not surfaced in UI
   RESEND
   CLOUDFLARE_R2

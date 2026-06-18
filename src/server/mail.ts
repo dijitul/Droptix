@@ -6,14 +6,14 @@ import { env } from '@/lib/env';
  * Mail sender with graceful fallbacks, so the admin is never locked
  * out of their own site:
  *
- *   1. Mailgun EU (preferred) — if API key + domain configured in
- *      /admin/integrations
+ *   1. SMTP2GO (preferred) — if an API key is configured in
+ *      /admin/integrations (HTTP send API, no SMTP connection needed)
  *   2. Local sendmail (default on CyberPanel / Postfix boxes)
  *   3. Console log to PM2 stdout — user can `pm2 logs droptix` to grab
  *      the magic-link URL
  *
- * Priority is tight: the moment a Mailgun API key + domain are entered
- * at /admin/integrations, all traffic routes there — no redeploy needed.
+ * Priority is tight: the moment an SMTP2GO API key is entered at
+ * /admin/integrations, all traffic routes there — no redeploy needed.
  */
 
 export type MailAddress = { email: string; name?: string };
@@ -26,26 +26,25 @@ export type SendMailParams = {
   headers?: Record<string, string>;
 };
 
-const MAILGUN_EU_BASE = 'https://api.eu.mailgun.net/v3';
+const SMTP2GO_SEND_URL = 'https://api.smtp2go.com/v3/email/send';
 
 export async function sendMail(params: SendMailParams): Promise<void> {
-  const [mailgunKey, mailgunDomain, fromEmailCfg, fromNameCfg] = await Promise.all([
-    getIntegration('MAILGUN', 'api_key'),
-    getIntegration('MAILGUN', 'domain'),
-    getIntegration('MAILGUN', 'from_email'),
-    getIntegration('MAILGUN', 'from_name'),
+  const [smtp2goKey, fromEmailCfg, fromNameCfg] = await Promise.all([
+    getIntegration('SMTP2GO', 'api_key'),
+    getIntegration('SMTP2GO', 'from_email'),
+    getIntegration('SMTP2GO', 'from_name'),
   ]);
   const fromEmail = fromEmailCfg ?? 'tickets@droptix.co.uk';
   const fromName = fromNameCfg ?? 'Droptix';
   const toList = Array.isArray(params.to) ? params.to : [params.to];
 
-  // ── 1. Mailgun EU ──────────────────────────────────────────
-  if (mailgunKey && mailgunDomain) {
+  // ── 1. SMTP2GO ─────────────────────────────────────────────
+  if (smtp2goKey) {
     try {
-      await sendViaMailgun({ ...params, fromEmail, fromName, toList, apiKey: mailgunKey, domain: mailgunDomain });
+      await sendViaSmtp2go({ ...params, fromEmail, fromName, toList, apiKey: smtp2goKey });
       return;
     } catch (err) {
-      console.warn('[mail] Mailgun send failed, falling back to sendmail:', err instanceof Error ? err.message : err);
+      console.warn('[mail] SMTP2GO send failed, falling back to sendmail:', err instanceof Error ? err.message : err);
     }
   }
 
@@ -65,47 +64,66 @@ export async function sendMail(params: SendMailParams): Promise<void> {
   console.warn('  ' + params.textBody.split('\n').join('\n  '));
 }
 
-async function sendViaMailgun(params: SendMailParams & {
+function formatAddress(a: MailAddress): string {
+  return a.name ? `${a.name} <${a.email}>` : a.email;
+}
+
+async function sendViaSmtp2go(params: SendMailParams & {
   fromEmail: string;
   fromName: string;
   toList: MailAddress[];
   apiKey: string;
-  domain: string;
 }): Promise<void> {
-  const body = new URLSearchParams();
-  body.append('from', `${params.fromName} <${params.fromEmail}>`);
-  for (const r of params.toList) {
-    body.append('to', r.name ? `${r.name} <${r.email}>` : r.email);
-  }
-  body.append('subject', params.subject);
-  body.append('text', params.textBody);
-  body.append('html', params.htmlBody);
-  body.append('o:tracking-clicks', 'no');
-  body.append('o:tracking-opens', 'no');
+  // SMTP2GO /email/send accepts: sender, to, cc, bcc, subject, text_body,
+  // html_body, custom_headers, attachments, inlines, template_id, template_data.
+  // There is no per-request tracking toggle — open/click tracking is controlled
+  // in the SMTP2GO dashboard (keep it off there for transactional-only sending).
+  const payload: Record<string, unknown> = {
+    sender: `${params.fromName} <${params.fromEmail}>`,
+    to: params.toList.map(formatAddress),
+    subject: params.subject,
+    text_body: params.textBody,
+    html_body: params.htmlBody,
+  };
   if (params.headers) {
-    for (const [k, v] of Object.entries(params.headers)) {
-      body.append(`h:${k}`, v);
-    }
+    payload.custom_headers = Object.entries(params.headers).map(([header, value]) => ({
+      header,
+      value,
+    }));
   }
 
-  const auth = Buffer.from(`api:${params.apiKey}`).toString('base64');
-  const url = `${MAILGUN_EU_BASE}/${encodeURIComponent(params.domain)}/messages`;
-
-  const res = await fetch(url, {
+  const res = await fetch(SMTP2GO_SEND_URL, {
     method: 'POST',
     headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
+      // Header auth is SMTP2GO's recommended method (keeps the key out of the body).
+      'X-Smtp2go-Api-Key': params.apiKey,
+      Accept: 'application/json',
     },
-    body: body.toString(),
+    body: JSON.stringify(payload),
   });
 
+  const text = await res.text().catch(() => '');
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Mailgun ${res.status}: ${text.slice(0, 300)}`);
+    throw new Error(`SMTP2GO ${res.status}: ${text.slice(0, 300)}`);
   }
+
+  // SMTP2GO returns HTTP 200 even for per-recipient failures — inspect the body.
+  let data: { data?: { succeeded?: number; failed?: number; failures?: unknown[]; error?: string } } = {};
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`SMTP2GO: unparseable response: ${text.slice(0, 200)}`);
+  }
+  const result = data.data ?? {};
+  if (result.error || (result.failed ?? 0) > 0 || (result.succeeded ?? 0) < 1) {
+    throw new Error(
+      `SMTP2GO send rejected: ${result.error ?? JSON.stringify(result.failures ?? result).slice(0, 300)}`,
+    );
+  }
+
   const to = params.toList.map((t) => t.email).join(', ');
-  console.log(`[mail] sent via Mailgun EU → ${to}`);
+  console.log(`[mail] sent via SMTP2GO → ${to}`);
 }
 
 function sendViaSendmail(params: SendMailParams & {

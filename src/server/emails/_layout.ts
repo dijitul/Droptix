@@ -54,7 +54,7 @@ export type EmailLayoutOptions = {
 /**
  * Wrap body content in the Droptix email shell.
  *
- * Returns a complete HTML document, ready to drop into Mailgun.
+ * Returns a complete HTML document, ready to drop into the mail sender.
  */
 export function emailLayout({ preheader, bodyHtml, appUrl, cta }: EmailLayoutOptions): string {
   return `<!doctype html>

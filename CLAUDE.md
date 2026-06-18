@@ -24,7 +24,7 @@ Production deploy landed 2026-04-22. Site is responding; homepage, `/discover`, 
 | Payments | Stripe Connect Express + hosted Checkout | PCI SAQ-A scope; per-organiser payouts |
 | Jobs | BullMQ + Redis | Email send, webhook retry, image resize, scan reconcile |
 | Storage | Cloudflare R2 (origin) + Cloudflare Images (CDN) | No egress fees, on-demand variants |
-| Email | Postmark | Transactional only, tracking disabled |
+| Email | **SMTP2GO** (HTTP send API) | Transactional only; API key in `Integration` table. Email provider history: Postmark → Mailgun → SMTP2GO (Mailgun closed the account) |
 | Deploy | **CyberPanel on a 2GB VPS** + Cloudflare front | Not Vercel — user's existing infra |
 | Process manager | PM2 (1 fork web + 1 fork worker) | Memory ceiling: web 600MB, worker 384MB |
 
@@ -93,7 +93,7 @@ droptix/
 │       ├── auth.ts                        # Auth.js v5 magic-link
 │       ├── integrations.ts                # Encrypted key vault
 │       ├── stripe.ts                      # Client factory via vault
-│       ├── mail.ts                        # Postmark (tracking off)
+│       ├── mail.ts                        # SMTP2GO HTTP API → sendmail → console fallback
 │       ├── r2.ts                          # Presigned R2 URLs
 │       ├── queue.ts                       # BullMQ factory
 │       ├── rate-limit.ts                  # Redis sliding window
