@@ -48,9 +48,12 @@ const config: NextConfig = {
     },
   },
 
-  // Fail the build on type errors in CI rather than at runtime
-  typescript: { ignoreBuildErrors: false },
-  eslint: { ignoreDuringBuilds: false },
+  // Type + lint errors fail the build by default. CI (.github/workflows/ci.yml)
+  // runs `pnpm typecheck` + `pnpm lint` on every push to main, so the on-box
+  // production build can safely skip these to save memory on the 2GB VPS —
+  // gated behind SKIP_BUILD_CHECKS=1, set only in the CyberPanel deploy step.
+  typescript: { ignoreBuildErrors: process.env.SKIP_BUILD_CHECKS === '1' },
+  eslint: { ignoreDuringBuilds: process.env.SKIP_BUILD_CHECKS === '1' },
 };
 
 export default config;

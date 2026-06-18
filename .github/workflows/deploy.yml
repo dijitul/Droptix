@@ -42,7 +42,9 @@ jobs:
             # schema change needing data loss fails loudly instead of silently.
             # TODO: switch to `db:migrate:deploy` once we baseline migrations.
             pnpm db:push
-            pnpm build
+            # 2GB box: cap V8 heap (else the build OOM-kills) and skip the
+            # type-check + lint passes — CI already ran both on this commit.
+            NODE_OPTIONS=--max-old-space-size=1280 SKIP_BUILD_CHECKS=1 pnpm build
             # Next.js `output: "standalone"` writes a self-contained server to
             # .next/standalone/server.js but does NOT copy the static asset
             # bundle (.next/static/**) or /public into it. PM2 runs the
