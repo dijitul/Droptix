@@ -69,7 +69,7 @@ const config = [
     },
   },
   {
-    ignores: ['node_modules/**', '.next/**', 'out/**', 'dist/**', 'coverage/**', 'prisma/generated/**'],
+    ignores: ['node_modules/**', '.next/**', 'out/**', 'dist/**', 'coverage/**', 'prisma/generated/**', 'next-env.d.ts'],
   },
 ];
 
