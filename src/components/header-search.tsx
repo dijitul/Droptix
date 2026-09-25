@@ -60,10 +60,13 @@ export function HeaderSearch({ variant = 'header' }: { variant?: 'header' | 'men
           Search
         </label>
         <div className="relative">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tertiary"
-            aria-hidden="true"
-          />
+          <button
+            type="submit"
+            aria-label="Search"
+            className="absolute inset-y-0 left-0 flex w-10 items-center justify-center text-tertiary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
+          </button>
           <input
             id="menu-search"
             ref={inputRef}
@@ -73,7 +76,7 @@ export function HeaderSearch({ variant = 'header' }: { variant?: 'header' | 'men
             onChange={(e) => setValue(e.target.value)}
             placeholder="Events, venues, promoters…"
             aria-label="Search Droptix"
-            className="flex h-12 w-full border-2 border-outline-variant bg-surface-container-high px-3 py-2 pl-9 text-base text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none"
+            className="flex h-12 w-full border-2 border-outline-variant bg-surface-container-high px-3 py-2 pl-10 text-base text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none"
           />
         </div>
       </form>
@@ -86,10 +89,13 @@ export function HeaderSearch({ variant = 'header' }: { variant?: 'header' | 'men
         Search Droptix
       </label>
       <div className="relative">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-tertiary"
-          aria-hidden="true"
-        />
+        <button
+          type="submit"
+          aria-label="Search"
+          className="absolute inset-y-0 left-0 flex w-8 items-center justify-center text-tertiary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Search className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
         <input
           id="header-search"
           ref={inputRef}

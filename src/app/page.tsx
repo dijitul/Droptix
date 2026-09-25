@@ -238,7 +238,7 @@ function ComparisonCell({
     <td
       className={
         highlight
-          ? 'border-t border-outline-variant bg-primary/10 px-3 align-top py-3 font-display text-sm font-bold text-primary [&>small]:label-tech [&>small]:font-normal [&>small]:text-primary/70'
+          ? 'border-t border-outline-variant bg-primary/10 px-3 align-top py-3 font-display text-sm font-bold text-primary [&>small]:label-tech [&>small]:font-normal [&>small]:text-primary'
           : 'border-t border-outline-variant px-3 py-3 align-top font-display text-sm font-bold text-on-surface-variant [&>small]:label-tech [&>small]:font-normal [&>small]:text-muted-foreground'
       }
     >
