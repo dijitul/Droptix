@@ -158,19 +158,27 @@ export default async function HomePage() {
           </div>
           <div className="border-2 border-outline-variant bg-surface-container p-6 md:p-8">
             <div className="label-tech mb-4 text-primary">Droptix vs. the incumbents</div>
-            <dl className="grid grid-cols-3 gap-0 border border-outline-variant">
-              <ComparisonHead>Fee</ComparisonHead>
-              <ComparisonHead>Payout</ComparisonHead>
-              <ComparisonHead>Signal</ComparisonHead>
-
-              <ComparisonCell>12% + VAT<br /><small>Skiddle</small></ComparisonCell>
-              <ComparisonCell>30 days<br /><small>Eventbrite</small></ComparisonCell>
-              <ComparisonCell>Queue pages<br /><small>Ticketmaster</small></ComparisonCell>
-
-              <ComparisonCell highlight>5% + £0.50<br /><small>Droptix</small></ComparisonCell>
-              <ComparisonCell highlight>7 days<br /><small>Droptix</small></ComparisonCell>
-              <ComparisonCell highlight>No queue page<br /><small>Droptix</small></ComparisonCell>
-            </dl>
+            <table className="w-full table-fixed border-collapse border border-outline-variant">
+              <thead>
+                <tr>
+                  <ComparisonHead>Fee</ComparisonHead>
+                  <ComparisonHead>Payout</ComparisonHead>
+                  <ComparisonHead>Signal</ComparisonHead>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <ComparisonCell>12% + VAT<br /><small>Skiddle</small></ComparisonCell>
+                  <ComparisonCell>30 days<br /><small>Eventbrite</small></ComparisonCell>
+                  <ComparisonCell>Queue pages<br /><small>Ticketmaster</small></ComparisonCell>
+                </tr>
+                <tr>
+                  <ComparisonCell highlight>5% + £0.50<br /><small>Droptix</small></ComparisonCell>
+                  <ComparisonCell highlight>7 days<br /><small>Droptix</small></ComparisonCell>
+                  <ComparisonCell highlight>No queue page<br /><small>Droptix</small></ComparisonCell>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -190,24 +198,32 @@ function FeatureStat({
   note: string;
 }) {
   return (
-    <div className="flex gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-primary/60 text-primary">
-        <Icon className="h-5 w-5" aria-hidden={true} />
-      </div>
-      <div>
-        <dt className="label-tech text-tertiary">{label}</dt>
-        <dd className="font-display text-xl font-bold">{value}</dd>
-        <p className="mt-1 text-sm text-muted-foreground">{note}</p>
-      </div>
+    // <dl> children must be <div> wrapping only <dt>/<dd>, so the icon
+    // lives inside the <dt> (absolutely placed in the left gutter) and the
+    // note inside the <dd>.
+    <div className="relative min-h-10 pl-14">
+      <dt className="label-tech text-tertiary">
+        <span className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center border-2 border-primary/60 text-primary">
+          <Icon className="h-5 w-5" aria-hidden={true} />
+        </span>
+        {label}
+      </dt>
+      <dd>
+        <span className="block font-display text-xl font-bold">{value}</span>
+        <span className="mt-1 block text-sm text-muted-foreground">{note}</span>
+      </dd>
     </div>
   );
 }
 
 function ComparisonHead({ children }: { children: React.ReactNode }) {
   return (
-    <div className="label-tech border-b border-outline-variant bg-surface-container-high px-3 py-2 text-tertiary">
+    <th
+      scope="col"
+      className="label-tech border-b border-outline-variant bg-surface-container-high px-3 py-2 text-left font-normal text-tertiary"
+    >
       {children}
-    </div>
+    </th>
   );
 }
 
@@ -219,14 +235,14 @@ function ComparisonCell({
   highlight?: boolean;
 }) {
   return (
-    <div
+    <td
       className={
         highlight
-          ? 'border-t border-outline-variant bg-primary/10 px-3 py-3 font-display text-sm font-bold text-primary [&>small]:label-tech [&>small]:font-normal [&>small]:text-primary/70'
-          : 'border-t border-outline-variant px-3 py-3 font-display text-sm font-bold text-on-surface-variant [&>small]:label-tech [&>small]:font-normal [&>small]:text-muted-foreground'
+          ? 'border-t border-outline-variant bg-primary/10 px-3 align-top py-3 font-display text-sm font-bold text-primary [&>small]:label-tech [&>small]:font-normal [&>small]:text-primary/70'
+          : 'border-t border-outline-variant px-3 py-3 align-top font-display text-sm font-bold text-on-surface-variant [&>small]:label-tech [&>small]:font-normal [&>small]:text-muted-foreground'
       }
     >
       {children}
-    </div>
+    </td>
   );
 }
