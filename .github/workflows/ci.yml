@@ -77,7 +77,7 @@ jobs:
       - run: pnpm db:generate
       - run: pnpm db:push
       - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps chromium webkit
       - name: Start server
         run: pnpm start &
       - name: Wait for server
