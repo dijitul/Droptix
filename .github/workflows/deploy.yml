@@ -1,4 +1,4 @@
-name: Deploy to CyberPanel
+name: Deploy to aaPanel
 
 on:
   push:
@@ -12,56 +12,42 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'staging' || 'preview' }}
     steps:
-      - uses: actions/checkout@v4
-
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
-          key: ${{ secrets.CYBERPANEL_SSH_KEY }}
-          known_hosts: ${{ secrets.CYBERPANEL_KNOWN_HOSTS }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known_hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
 
+      # Production = server.dijitul.uk (aaPanel), app dir owned by the
+      # `droptix` user, PM2 run by systemd unit pm2-droptix. Moved here
+      # 2026-08-18 from the old CyberPanel box.
       - name: Deploy over SSH
         env:
-          HOST: ${{ secrets.CYBERPANEL_HOST }}
-          USER: ${{ secrets.CYBERPANEL_USER }}
-          APP_DIR: ${{ secrets.CYBERPANEL_APP_DIR }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+          APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
         run: |
-          ssh $USER@$HOST <<'EOSSH'
+          ssh "$USER@$HOST" "APP_DIR='$APP_DIR' bash -s" <<'EOSSH'
             set -euo pipefail
-            cd ${{ secrets.CYBERPANEL_APP_DIR }}
-            git fetch --all
+            cd "$APP_DIR"
+            # Tracked files only: .env.production, uploads/, logs/ are
+            # gitignored and aaPanel's .htaccess/.user.ini/404.html are
+            # untracked, so reset --hard leaves them alone. Never add
+            # `git clean` here.
+            git fetch origin main
             git reset --hard origin/main
             pnpm install --frozen-lockfile --prod=false
             pnpm db:generate
-            # This project manages its schema with `prisma db push` (no
-            # prisma/migrations yet). `migrate deploy` errors P3005 against a
-            # db:push-created database. Use db:push here too — idempotent, and
-            # it refuses destructive changes without --accept-data-loss, so a
-            # schema change needing data loss fails loudly instead of silently.
-            # TODO: switch to `db:migrate:deploy` once we baseline migrations.
-            pnpm db:push
-            # 2GB box: cap V8 heap (else the build OOM-kills) and skip the
-            # type-check + lint passes — CI already ran both on this commit.
-            NODE_OPTIONS=--max-old-space-size=1280 SKIP_BUILD_CHECKS=1 pnpm build
-            # Next.js `output: "standalone"` writes a self-contained server to
-            # .next/standalone/server.js but does NOT copy the static asset
-            # bundle (.next/static/**) or /public into it. PM2 runs the
-            # standalone server, so without this step every CSS + JS chunk
-            # 404s and the live site renders unstyled. This bit us once —
-            # never again.
+            # No `db:push` here on purpose: the live DB lacks some FKs the
+            # schema declares, so the first push would alter production.
+            # Run schema changes by hand, deliberately.
+            SKIP_BUILD_CHECKS=1 pnpm build
+            # Standalone output doesn't include static assets or public/.
             cp -r .next/static .next/standalone/.next/
             cp -r public .next/standalone/
-            # Reload the Node process managed by PM2 (installed per CyberPanel
-            # Node.js app convention). Fall back to passenger restart if PM2 isn't present.
-            if command -v pm2 >/dev/null 2>&1; then
-              # Reload both web + worker. `reload ecosystem.config.cjs`
-              # catches all apps declared in the file. Without --update-env
-              # the worker holds stale env + stale compiled code.
-              pm2 reload ecosystem.config.cjs --update-env
-              pm2 save
-            else
-              touch tmp/restart.txt
-            fi
+            pm2 reload ecosystem.config.cjs --update-env
+            pm2 save
+            sleep 5
+            curl -fsS --max-time 10 http://127.0.0.1:3001/api/health
           EOSSH
