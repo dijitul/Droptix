@@ -65,7 +65,7 @@ jobs:
       AUTH_SECRET: ci_auth_secret_minimum_thirty_two_chars_long_______________
       AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
-      INTEGRATIONS_ENCRYPTION_KEY: "YmFzZTY0LWVuY29kZWQtMzItYnl0ZS1rZXkteXlweXlweXk="
+      INTEGRATIONS_ENCRYPTION_KEY: "Y2ktb25seS1kdW1teS1rZXktbm90LWEtc2VjcmV0ISE=" # dummy 32 bytes, CI only
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

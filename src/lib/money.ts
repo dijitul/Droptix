@@ -142,9 +142,14 @@ export class Money {
   format(): string {
     const minor = MINOR_UNITS[this.currency];
     const divisor = 10n ** BigInt(minor);
-    const whole = this.amount / divisor;
-    const remainder = this.amount < 0n ? -this.amount % divisor : this.amount % divisor;
-    const asNumber = Number(whole) + Number(remainder) / Number(divisor);
+    // Split the absolute value, then re-apply the sign — adding a positive
+    // remainder to a negative whole turned -525p into -£4.75.
+    const negative = this.amount < 0n;
+    const absValue = negative ? -this.amount : this.amount;
+    const whole = absValue / divisor;
+    const remainder = absValue % divisor;
+    const magnitude = Number(whole) + Number(remainder) / Number(divisor);
+    const asNumber = negative ? -magnitude : magnitude;
     return new Intl.NumberFormat(LOCALE_FOR[this.currency], {
       style: 'currency',
       currency: this.currency,
