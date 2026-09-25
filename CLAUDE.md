@@ -48,13 +48,14 @@ Production deploy landed 2026-04-22. Site is responding; homepage, `/discover`, 
 
 ## Production server quick reference
 
-- **Host**: `142.93.40.130` (Ubuntu 24.04, CyberPanel 2.4, 2 CPU, 2GB RAM)
-- **App dir**: `/home/droptix.co.uk/apps/droptix` (owned by `dropt9225`)
-- **DB**: `mysql://droptix_app@127.0.0.1:3306/droptix_new`
-- **PM2 processes**: `droptix` (web on 127.0.0.1:3001) + `droptix-worker`
-- **LSWS vhost config**: `/usr/local/lsws/conf/vhosts/droptix.co.uk/vhost.conf` — proxies `/` to 127.0.0.1:3001. If CyberPanel's UI regenerates this file, the backup is next to it.
-- **Secrets file**: `/root/droptix-handoff.txt` (chmod 600)
-- **Auto-deploy**: push to `main` → GitHub Actions SSHes in via the ed25519 key at `/home/droptix.co.uk/.ssh/droptix_deploy` (secrets already set up on server; still to be pasted into GitHub Actions)
+**Moved 2026-08-18** off the CyberPanel box (142.93.40.130, root-compromised, now firewalled off) onto the aaPanel server. Anything below that mentions CyberPanel, LSWS or `dropt9225` is historical.
+
+- **Host**: `server.dijitul.uk` / `167.71.138.196` (aaPanel, nginx, 8GB RAM). SSH: `ssh -i ~/.ssh/dijitul_newserver root@167.71.138.196`
+- **App dir**: `/www/wwwroot/droptix.co.uk` (owned by `droptix`). **Not a git checkout** — files were copied in; sync changed files by hand.
+- **PM2**: runs as `droptix` (`su - droptix -s /bin/bash`), systemd unit `pm2-droptix`. Apps `droptix` (`.next/standalone/server.js`) + `droptix-worker`.
+- **Deploy by hand**: copy changed files → `pnpm build` → `cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/` → `pm2 reload droptix --update-env && pm2 save`
+- **Image storage**: `STORAGE_PATH=/www/wwwroot/droptix.co.uk/uploads`. When copying the app, exclude `/uploads/` **anchored** — an unanchored `uploads` exclude dropped `src/app/api/uploads/` in the migration and broke artwork upload until 2026-09-25.
+- **GitHub Actions deploy is dead**: its secrets still point at the old CyberPanel box, so every push to `main` fails at SSH. Harmless, but nothing auto-deploys.
 
 ## Repo map
 

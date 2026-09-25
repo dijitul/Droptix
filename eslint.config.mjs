@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 const compat = new FlatCompat({ baseDirectory: __dirname });
 
-export default [
+const config = [
   ...compat.extends('next/core-web-vitals', 'next/typescript', 'plugin:jsx-a11y/recommended'),
   {
     rules: {
@@ -72,3 +72,5 @@ export default [
     ignores: ['node_modules/**', '.next/**', 'out/**', 'dist/**', 'coverage/**', 'prisma/generated/**'],
   },
 ];
+
+export default config;
