@@ -84,6 +84,10 @@ jobs:
         run: npx wait-on http://localhost:3000 -t 60000
       - run: pnpm test:e2e
       - run: pnpm test:a11y
+        env:
+          # pa11y's Puppeteer doesn't download its own Chrome here; use the
+          # Google Chrome preinstalled on GitHub's Ubuntu runners.
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
