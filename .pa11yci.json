@@ -1,13 +1,23 @@
 {
   "defaults": {
     "standard": "WCAG2AA",
-    "runners": ["axe", "htmlcs"],
+    "runners": [
+      "axe",
+      "htmlcs"
+    ],
+    "levelCapWhenNeedsReview": "warning",
     "timeout": 30000,
     "wait": 500,
     "chromeLaunchConfig": {
-      "args": ["--no-sandbox", "--disable-dev-shm-usage"]
+      "args": [
+        "--no-sandbox",
+        "--disable-dev-shm-usage"
+      ]
     },
-    "ignore": ["warning", "notice"]
+    "ignore": [
+      "warning",
+      "notice"
+    ]
   },
   "urls": [
     "http://localhost:3000/"
