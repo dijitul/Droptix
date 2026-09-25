@@ -7,7 +7,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { createImageUploadUrl } from '@/server/images';
+import { createImageUploadUrl, uploadLocalImageBytes } from '@/server/images';
 
 type Props = {
   aspect?: number;
@@ -129,19 +129,12 @@ export function ImageUploader({
         });
         if (!putResponse.ok) throw new Error(`Upload failed: ${putResponse.status}`);
       } else {
-        // Local: POST to our own route with the one-time token
-        const postResponse = await fetch(target.uploadPath, {
-          method: 'POST',
-          body: blob,
-          headers: {
-            'Content-Type': 'image/jpeg',
-            'X-Upload-Token': target.uploadToken,
-          },
-        });
-        if (!postResponse.ok) {
-          const text = await postResponse.text().catch(() => '');
-          throw new Error(`Upload failed (${postResponse.status}): ${text.slice(0, 200)}`);
-        }
+        // Local: send the bytes through a server action (the
+        // /api/uploads/image route isn't reachable in production)
+        const formData = new FormData();
+        formData.append('imageId', target.imageId);
+        formData.append('file', blob, 'artwork.jpg');
+        await uploadLocalImageBytes(formData);
       }
 
       setSrcPreview(target.publicUrl);

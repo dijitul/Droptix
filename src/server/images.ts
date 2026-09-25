@@ -185,6 +185,37 @@ export async function consumeUploadToken(token: string): Promise<string | null> 
   return record.imageId;
 }
 
+/**
+ * Local-backend upload via server action. The client sends the cropped
+ * blob as FormData (`imageId` + `file`) instead of POSTing to
+ * /api/uploads/image — that route 404s in production, while server
+ * actions demonstrably work there (bodySizeLimit is 50mb in next.config).
+ * Authorised by session + ownership of the Image row, so no token needed.
+ */
+export async function uploadLocalImageBytes(formData: FormData): Promise<void> {
+  const user = await requireOrganiser();
+
+  const imageId = formData.get('imageId');
+  const file = formData.get('file');
+  if (typeof imageId !== 'string' || !(file instanceof Blob)) {
+    throw new Error('Upload payload missing image.');
+  }
+  if (file.size > MAX_BYTES) {
+    throw new Error('Image too large (max 50MB). Crop tighter or pick a smaller source.');
+  }
+
+  const image = await db.image.findFirst({
+    where: { id: imageId, uploadedById: user.id },
+  });
+  if (!image) throw new Error('Image record not found.');
+  if (file.size !== image.sizeBytes) {
+    throw new Error('Upload size mismatch — please try again.');
+  }
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  await saveImageBytes({ key: image.r2Key, data: bytes, mimeType: image.mimeType });
+}
+
 /** Pure write path — called from the upload route after token validation. */
 export async function persistImageBytes(imageId: string, bytes: Buffer): Promise<void> {
   const image = await db.image.findUnique({ where: { id: imageId } });
